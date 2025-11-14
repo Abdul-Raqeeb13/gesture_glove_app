@@ -32,11 +32,16 @@ dependencies:
     sdk: flutter
   flutter_bluetooth_serial: ^0.4.0
   flutter_tts: ^3.8.3
-  permission_handler: ^10.2.0 # Add this line
-
-  # The following adds the Cupertino Icons font to your application.
-  # Use with the CupertinoIcons class for iOS style icons.
+  permission_handler: ^10.2.0
   cupertino_icons: ^1.0.6
+
+  # These are the ones we added!
+  # Make sure these are here:
+  provider: ^6.1.2
+  shared_preferences: ^2.2.3
+  flutter_localizations: # This one is special
+    sdk: flutter
+  intl: ^0.18.1
 
 dev_dependencies:
   flutter_test:
@@ -58,6 +63,12 @@ flutter:
   # included with your application, so that you can use the icons in
   # the material Icons class.
   uses-material-design: true
+
+  # ADD THIS LINE:
+  generate: true
+
+  assets:
+    - assets/images/
 
   # To add assets to your application, add an assets section, like this:
   # assets:
