@@ -1,0 +1,7 @@
+# This file configures the localization tool.
+# Run 'flutter gen-l10n' in your terminal to generate
+# the localization delegate files.
+
+arb-dir: lib/l10n
+template-arb-file: app_en.arb
+output-localization-file: app_localizations.dart
