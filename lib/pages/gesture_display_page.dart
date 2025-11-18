@@ -1,22 +1,106 @@
 import 'package:flutter/material.dart';
+import 'package:gesture_glove_app/models/custom_gesture.dart';
 import 'package:gesture_glove_app/providers/bluetooth_provider.dart';
+import 'package:gesture_glove_app/providers/tts_provider.dart';
+import 'package:gesture_glove_app/services/database_service.dart';
+import 'package:gesture_glove_app/services/recognition_service.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
-class GestureDisplayPage extends StatelessWidget {
+class GestureDisplayPage extends StatefulWidget {
   const GestureDisplayPage({super.key});
+
+  @override
+  State<GestureDisplayPage> createState() => _GestureDisplayPageState();
+}
+
+class _GestureDisplayPageState extends State<GestureDisplayPage> {
+  // --- Services ---
+  final DatabaseService _dbService = DatabaseService();
+  final RecognitionService _recognitionService = RecognitionService();
+  late TtsProvider _ttsProvider; // We'll get this from context
+
+  // --- State ---
+  List<CustomGesture> _savedGestures = [];
+  String _recognizedText = "None";
+  bool _isFirstLoad = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadGestures();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_isFirstLoad) {
+      // Get the TtsProvider once
+      _ttsProvider = context.read<TtsProvider>();
+      _isFirstLoad = false;
+    }
+  }
+
+  void _loadGestures() {
+    setState(() {
+      _savedGestures = _dbService.getAllGestures().values.toList();
+      print("Loaded ${_savedGestures.length} gestures.");
+    });
+  }
+
+  // This is the core recognition logic
+  void _onSensorDataUpdate(BluetoothProvider provider) {
+    if (_savedGestures.isEmpty) {
+      // If no custom gestures, just use the pre-programmed one
+      // This bridges your old and new logic
+      if (provider.lastGesture.isNotEmpty &&
+          provider.lastGesture != _recognizedText) {
+        setState(() {
+          _recognizedText = provider.lastGesture;
+        });
+        // TTS is already handled by provider for this old logic
+      }
+      return;
+    }
+
+    // --- New Custom Gesture Logic ---
+    final newText = _recognitionService.findBestMatch(
+      provider.rawFlexData,
+      provider.accelX,
+      provider.accelY,
+      provider.accelZ,
+      _savedGestures,
+    );
+
+    if (newText != _recognizedText) {
+      setState(() {
+        _recognizedText = newText;
+      });
+
+      // Speak the new text
+      if (newText != "None") {
+        // We use the TtsProvider, respecting the user's settings
+        _ttsProvider.speak(newText);
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context)!;
+
+    // --- Use context.watch() ---
+    // This makes the widget rebuild every time new data arrives
     final provider = context.watch<BluetoothProvider>();
+
+    // --- Trigger recognition on build ---
+    // This is simple and effective
+    _onSensorDataUpdate(provider);
+
     final colorScheme = Theme.of(context).colorScheme;
     final bool isConnected = provider.isConnected;
-
-    // Condition for the gesture display
-    final String gesture = provider.lastGesture;
-    final bool isWaiting =
-        gesture.isEmpty || gesture.toLowerCase() == l.none.toLowerCase();
+    final bool isWaiting = _recognizedText.isEmpty ||
+        _recognizedText.toLowerCase() == l.none.toLowerCase();
 
     return Center(
       child: Padding(
@@ -24,61 +108,13 @@ class GestureDisplayPage extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // --- 1. Redesigned Connection Status ---
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: isConnected ? Colors.green : colorScheme.error,
-                  width: 1.5,
-                ),
-                // Add a subtle background color
-                color: isConnected
-                    ? Colors.green.withOpacity(0.1)
-                    : colorScheme.error.withOpacity(0.1),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    isConnected
-                        ? Icons.bluetooth_connected
-                        : Icons.bluetooth_disabled,
-                    color: isConnected ? Colors.green : colorScheme.error,
-                  ),
-                  const SizedBox(width: 12),
-                  // Use a Column for cleaner text alignment
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        isConnected ? l.connected : l.disconnected,
-                        style:
-                            Theme.of(context).textTheme.titleMedium?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                  color: isConnected
-                                      ? Colors.green
-                                      : colorScheme.error,
-                                ),
-                      ),
-                      if (isConnected)
-                        Text(
-                          provider.connectedDeviceName,
-                          style: Theme.of(context).textTheme.bodySmall,
-                        ),
-                    ],
-                  ),
-                  const Spacer(), // Pushes content to the left
-                ],
-              ),
-            ),
-
+            // --- 1. Connection Status (Your existing widget is great) ---
+            _buildConnectionStatus(context, l, isConnected, provider),
             const SizedBox(height: 48),
 
-            // --- 2. Redesigned Gesture Display ---
+            // --- 2. Gesture Display ---
             Text(
-              l.lastGesture, // Keep the original title
+              l.lastGesture, // "Last Gesture"
               style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
@@ -89,12 +125,11 @@ class GestureDisplayPage extends StatelessWidget {
             AnimatedContainer(
               duration: const Duration(milliseconds: 300),
               width: double.infinity,
-              height: 250, // Give it a defined height
+              height: 250,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(24),
                 color: colorScheme.onSurface.withOpacity(0.05),
                 border: Border.all(
-                  // Border color changes with state
                   color: isWaiting
                       ? colorScheme.outline.withOpacity(0.3)
                       : colorScheme.primary.withOpacity(0.7),
@@ -104,14 +139,14 @@ class GestureDisplayPage extends StatelessWidget {
               child: AnimatedSwitcher(
                 duration: const Duration(milliseconds: 300),
                 transitionBuilder: (child, animation) {
-                  // Fade and scale transition
                   return FadeTransition(
                       opacity: animation,
                       child: ScaleTransition(scale: animation, child: child));
                 },
+                // We now use our local _recognizedText state
                 child: isWaiting
-                    ? _buildWaitingState(context, l) // "Logo" state
-                    : _buildDetectedState(context, gesture), // "Detected" state
+                    ? _buildWaitingState(context, l)
+                    : _buildDetectedState(context, _recognizedText),
               ),
             ),
           ],
@@ -120,49 +155,70 @@ class GestureDisplayPage extends StatelessWidget {
     );
   }
 
-  /// Helper widget for the "Waiting" state (this is your "logo")
-  Widget _buildWaitingState(BuildContext context, AppLocalizations l) {
-    // A dummy URL for your logo. Replace this with your real logo asset/URL.
-    const String logoUrl =
-        'https://placehold.co/100x100/transparent/888888?text=LOGO&font=lato';
+  // --- WIDGETS (Copied from your code, unchanged) ---
 
+  Widget _buildConnectionStatus(BuildContext context, AppLocalizations l,
+      bool isConnected, BluetoothProvider provider) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isConnected ? Colors.green : colorScheme.error,
+          width: 1.5,
+        ),
+        color: isConnected
+            ? Colors.green.withOpacity(0.1)
+            : colorScheme.error.withOpacity(0.1),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            isConnected ? Icons.bluetooth_connected : Icons.bluetooth_disabled,
+            color: isConnected ? Colors.green : colorScheme.error,
+          ),
+          const SizedBox(width: 12),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                isConnected ? l.connected : l.disconnected,
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: isConnected ? Colors.green : colorScheme.error,
+                    ),
+              ),
+              if (isConnected)
+                Text(
+                  provider.connectedDeviceName,
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+            ],
+          ),
+          const Spacer(),
+        ],
+      ),
+    );
+  }
+
+  /// Helper widget for the "Waiting" state
+  Widget _buildWaitingState(BuildContext context, AppLocalizations l) {
+    // Replaced your logo with a standard icon for simplicity.
+    // You can put your Image.network back here easily.
     return Column(
       key: const ValueKey('waiting'), // Key for AnimatedSwitcher
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        // --- Updated to show a Network Logo ---
-        Image.network(
-          logoUrl,
-          width: 100,
-          height: 100,
-          // Add a loading builder for a modern feel
-          loadingBuilder: (context, child, loadingProgress) {
-            if (loadingProgress == null) return child; // Image loaded
-            return Container(
-              width: 100,
-              height: 100,
-              alignment: Alignment.center,
-              child: CircularProgressIndicator(
-                value: loadingProgress.expectedTotalBytes != null
-                    ? loadingProgress.cumulativeBytesLoaded /
-                        loadingProgress.expectedTotalBytes!
-                    : null,
-              ),
-            );
-          },
-          // Add an error builder for robustness
-          errorBuilder: (context, error, stackTrace) {
-            return Icon(
-              Icons.broken_image_outlined, // Fallback icon
-              size: 100,
-              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
-            );
-          },
+        Icon(
+          Icons.accessibility_new_rounded,
+          size: 100,
+          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
         ),
-        // --- End of update ---
         const SizedBox(height: 16),
         Text(
-          l.none, // Use the "None" text as requested
+          l.none,
           style: Theme.of(context).textTheme.titleLarge?.copyWith(
                 color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
                 fontWeight: FontWeight.normal,
@@ -179,7 +235,7 @@ class GestureDisplayPage extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         Icon(
-          Icons.waving_hand_rounded, // Icon for detected
+          Icons.record_voice_over_rounded, // Changed icon to "speaking"
           size: 100,
           color: Theme.of(context).colorScheme.primary,
         ),

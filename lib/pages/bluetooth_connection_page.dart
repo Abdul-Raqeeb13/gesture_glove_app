@@ -1,3 +1,5 @@
+// lib/pages/bluetooth_connection_page.dart
+
 import 'package:flutter/material.dart';
 import 'package:gesture_glove_app/providers/bluetooth_provider.dart';
 import 'package:provider/provider.dart';
@@ -13,15 +15,25 @@ class BluetoothConnectionPage extends StatefulWidget {
 }
 
 class _BluetoothConnectionPageState extends State<BluetoothConnectionPage> {
+  // --- MODIFIED ---
+  // 1. Add a variable to hold the provider
+  late BluetoothProvider _bluetoothProvider;
+
   @override
   void initState() {
     super.initState();
+
+    // --- MODIFIED ---
+    // 2. Get the provider reference here (it's safe)
+    // We use listen: false because we are not rebuilding in initState
+    _bluetoothProvider = Provider.of<BluetoothProvider>(context, listen: false);
+
     // When this page loads, start scanning for devices
     // We use a post-frame callback to make sure the provider is available
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
-        Provider.of<BluetoothProvider>(context, listen: false)
-            .requestPermissionsAndScan();
+        // Use the saved variable
+        _bluetoothProvider.requestPermissionsAndScan();
       }
     });
   }
@@ -29,16 +41,18 @@ class _BluetoothConnectionPageState extends State<BluetoothConnectionPage> {
   @override
   void dispose() {
     // When we leave this page, stop scanning to save battery
-    // We check if the provider is still mounted before accessing it.
-    if (mounted) {
-      Provider.of<BluetoothProvider>(context, listen: false).stopScan();
-    }
+
+    // --- MODIFIED ---
+    // 3. Use the saved variable. This is safe and doesn't use 'context'.
+    _bluetoothProvider.stopScan();
+
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context)!;
+    // We can still use context.watch() here to listen for UI changes
     final provider = context.watch<BluetoothProvider>();
 
     return Scaffold(
@@ -112,6 +126,7 @@ class _BluetoothConnectionPageState extends State<BluetoothConnectionPage> {
           : ElevatedButton(
               child: Text(l.connect),
               onPressed: () async {
+                // Use the provider from the 'build' method here
                 final success = await provider.connectToDevice(device);
                 if (success && mounted) {
                   // Go back to the previous screen (home) after connecting
