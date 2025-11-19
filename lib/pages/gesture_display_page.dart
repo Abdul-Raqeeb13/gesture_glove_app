@@ -86,6 +86,19 @@ class GestureDisplayPage extends StatelessWidget {
                         fontWeight: FontWeight.bold,
                       ),
                 ),
+                const SizedBox(width: 8),
+                if (ttsProvider.isTtsEnabled)
+                  Icon(
+                    Icons.volume_up_rounded,
+                    color: colorScheme.primary,
+                    size: 24,
+                  )
+                else
+                  Icon(
+                    Icons.volume_off_rounded,
+                    color: colorScheme.onSurface.withOpacity(0.3),
+                    size: 24,
+                  ),
               ],
             ),
             const SizedBox(height: 16),
@@ -120,11 +133,65 @@ class GestureDisplayPage extends StatelessWidget {
 
             const SizedBox(height: 24),
 
-            // Debug info (optional - remove in production)
+            // Manual Speak Button
             if (!isWaiting && isConnected)
-              Text(
-                "Gesture detected: $gesture",
-                style: Theme.of(context).textTheme.bodySmall,
+              Column(
+                children: [
+                  ElevatedButton.icon(
+                    onPressed: () {
+                      debugPrint("🔘 Manual Speak Button Pressed");
+                      ttsProvider.speak(gesture);
+                    },
+                    icon: Icon(ttsProvider.isTtsEnabled
+                        ? Icons.volume_up_outlined
+                        : Icons.volume_off_outlined),
+                    label: Text(ttsProvider.isTtsEnabled
+                        ? "Speak Again"
+                        : "TTS Disabled"),
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 24, vertical: 12),
+                    ),
+                  ),
+
+                  // Debug Info Panel
+                  const SizedBox(height: 16),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: colorScheme.surfaceVariant.withOpacity(0.3),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: colorScheme.outline.withOpacity(0.3),
+                      ),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          "Debug Info:",
+                          style:
+                              Theme.of(context).textTheme.labelSmall?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          "• Gesture: \"$gesture\"",
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
+                        Text(
+                          "• TTS Enabled: ${ttsProvider.isTtsEnabled}",
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
+                        Text(
+                          "• Connected: $isConnected",
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
           ],
         ),

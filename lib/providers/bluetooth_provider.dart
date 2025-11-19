@@ -176,25 +176,35 @@ class BluetoothProvider with ChangeNotifier {
   }
 
   void _processReceivedLine(String message) {
-    debugPrint("Received message: $message");
+    debugPrint("📱 BT Received: $message");
 
     String gesture = _extractGesture(message);
 
     if (gesture.isNotEmpty) {
-      debugPrint("Extracted gesture: $gesture");
+      debugPrint("✅ Extracted gesture: $gesture");
       _lastGesture = gesture;
+      debugPrint("🔊 Calling TTS speak...");
       _ttsProvider.speak(gesture);
+      debugPrint("📢 Notifying listeners...");
       notifyListeners();
+    } else {
+      debugPrint("❌ No valid gesture found in message");
     }
   }
 
   /// FIXED: Extract gesture from Arduino's simple format
   String _extractGesture(String data) {
     try {
-      String gesture = data.trim();
+      // Clean up the data - remove semicolons, periods, extra whitespace
+      String gesture = data
+          .trim()
+          .replaceAll(';', '') // Remove semicolons
+          .replaceAll('.', '') // Remove periods
+          .trim();
 
       // Filter out debug/sensor data that Arduino might send
-      if (gesture.startsWith("Flex:") ||
+      if (gesture.isEmpty ||
+          gesture.startsWith("Flex:") ||
           gesture.startsWith("Accel:") ||
           gesture.startsWith("==") ||
           gesture.startsWith("Bluetooth") ||
@@ -202,8 +212,7 @@ class BluetoothProvider with ChangeNotifier {
           gesture.startsWith("Gesture Calibrated") ||
           gesture.startsWith("Found a MPU") ||
           gesture.startsWith("The device with name") ||
-          gesture.contains("----------") ||
-          gesture.isEmpty) {
+          gesture.contains("----------")) {
         return "";
       }
 

@@ -14,6 +14,10 @@ void main() async {
   // Load shared preferences to get saved settings
   SharedPreferences prefs = await SharedPreferences.getInstance();
 
+  // ✅ FORCE ENABLE TTS - THIS IS THE FIX!
+  await prefs.setBool('tts_enabled', true);
+  debugPrint("🔧 MAIN: Force enabled TTS in SharedPreferences");
+
   // --- Create providers that depend on each other ---
   // 1. Create TtsProvider first
   final ttsProvider = TtsProvider(prefs);
