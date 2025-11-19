@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:gesture_glove_app/providers/bluetooth_provider.dart';
+import 'package:gesture_glove_app/providers/tts_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
@@ -9,14 +10,15 @@ class GestureDisplayPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context)!;
-    final provider = context.watch<BluetoothProvider>();
+    final btProvider = context.watch<BluetoothProvider>();
+    final ttsProvider = context.watch<TtsProvider>();
     final colorScheme = Theme.of(context).colorScheme;
-    final bool isConnected = provider.isConnected;
+    final bool isConnected = btProvider.isConnected;
 
-    // Condition for the gesture display
-    final String gesture = provider.lastGesture;
-    final bool isWaiting =
-        gesture.isEmpty || gesture.toLowerCase() == l.none.toLowerCase();
+    final String gesture = btProvider.lastGesture;
+    final bool isWaiting = gesture.isEmpty ||
+        gesture.toLowerCase() == "none" ||
+        gesture.toLowerCase() == "no gesture";
 
     return Center(
       child: Padding(
@@ -24,7 +26,7 @@ class GestureDisplayPage extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // --- 1. Redesigned Connection Status ---
+            // Connection Status
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
@@ -33,7 +35,6 @@ class GestureDisplayPage extends StatelessWidget {
                   color: isConnected ? Colors.green : colorScheme.error,
                   width: 1.5,
                 ),
-                // Add a subtle background color
                 color: isConnected
                     ? Colors.green.withOpacity(0.1)
                     : colorScheme.error.withOpacity(0.1),
@@ -48,7 +49,6 @@ class GestureDisplayPage extends StatelessWidget {
                     color: isConnected ? Colors.green : colorScheme.error,
                   ),
                   const SizedBox(width: 12),
-                  // Use a Column for cleaner text alignment
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -64,37 +64,41 @@ class GestureDisplayPage extends StatelessWidget {
                       ),
                       if (isConnected)
                         Text(
-                          provider.connectedDeviceName,
+                          btProvider.connectedDeviceName,
                           style: Theme.of(context).textTheme.bodySmall,
                         ),
                     ],
                   ),
-                  const Spacer(), // Pushes content to the left
+                  const Spacer(),
                 ],
               ),
             ),
 
             const SizedBox(height: 48),
 
-            // --- 2. Redesigned Gesture Display ---
-            Text(
-              l.lastGesture, // Keep the original title
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+            // Gesture Display Header
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  l.lastGesture,
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                ),
+              ],
             ),
             const SizedBox(height: 16),
 
-            // The main animated display card
+            // Main Gesture Display
             AnimatedContainer(
               duration: const Duration(milliseconds: 300),
               width: double.infinity,
-              height: 250, // Give it a defined height
+              height: 250,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(24),
                 color: colorScheme.onSurface.withOpacity(0.05),
                 border: Border.all(
-                  // Border color changes with state
                   color: isWaiting
                       ? colorScheme.outline.withOpacity(0.3)
                       : colorScheme.primary.withOpacity(0.7),
@@ -104,65 +108,43 @@ class GestureDisplayPage extends StatelessWidget {
               child: AnimatedSwitcher(
                 duration: const Duration(milliseconds: 300),
                 transitionBuilder: (child, animation) {
-                  // Fade and scale transition
                   return FadeTransition(
                       opacity: animation,
                       child: ScaleTransition(scale: animation, child: child));
                 },
                 child: isWaiting
-                    ? _buildWaitingState(context, l) // "Logo" state
-                    : _buildDetectedState(context, gesture), // "Detected" state
+                    ? _buildWaitingState(context, l)
+                    : _buildDetectedState(context, gesture, colorScheme),
               ),
             ),
+
+            const SizedBox(height: 24),
+
+            // Debug info (optional - remove in production)
+            if (!isWaiting && isConnected)
+              Text(
+                "Gesture detected: $gesture",
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
           ],
         ),
       ),
     );
   }
 
-  /// Helper widget for the "Waiting" state (this is your "logo")
   Widget _buildWaitingState(BuildContext context, AppLocalizations l) {
-    // A dummy URL for your logo. Replace this with your real logo asset/URL.
-    const String logoUrl =
-        'https://placehold.co/100x100/transparent/888888?text=LOGO&font=lato';
-
     return Column(
-      key: const ValueKey('waiting'), // Key for AnimatedSwitcher
+      key: const ValueKey('waiting'),
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        // --- Updated to show a Network Logo ---
-        Image.network(
-          logoUrl,
-          width: 100,
-          height: 100,
-          // Add a loading builder for a modern feel
-          loadingBuilder: (context, child, loadingProgress) {
-            if (loadingProgress == null) return child; // Image loaded
-            return Container(
-              width: 100,
-              height: 100,
-              alignment: Alignment.center,
-              child: CircularProgressIndicator(
-                value: loadingProgress.expectedTotalBytes != null
-                    ? loadingProgress.cumulativeBytesLoaded /
-                        loadingProgress.expectedTotalBytes!
-                    : null,
-              ),
-            );
-          },
-          // Add an error builder for robustness
-          errorBuilder: (context, error, stackTrace) {
-            return Icon(
-              Icons.broken_image_outlined, // Fallback icon
-              size: 100,
-              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
-            );
-          },
+        Icon(
+          Icons.back_hand_outlined,
+          size: 100,
+          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.3),
         ),
-        // --- End of update ---
         const SizedBox(height: 16),
         Text(
-          l.none, // Use the "None" text as requested
+          "Waiting for gesture...",
           style: Theme.of(context).textTheme.titleLarge?.copyWith(
                 color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
                 fontWeight: FontWeight.normal,
@@ -172,25 +154,30 @@ class GestureDisplayPage extends StatelessWidget {
     );
   }
 
-  /// Helper widget for the "Detected" state
-  Widget _buildDetectedState(BuildContext context, String gesture) {
+  Widget _buildDetectedState(
+      BuildContext context, String gesture, ColorScheme colorScheme) {
     return Column(
-      key: const ValueKey('detected'), // Key for AnimatedSwitcher
+      key: ValueKey('detected_$gesture'),
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         Icon(
-          Icons.waving_hand_rounded, // Icon for detected
+          Icons.waving_hand_rounded,
           size: 100,
-          color: Theme.of(context).colorScheme.primary,
+          color: colorScheme.primary,
         ),
         const SizedBox(height: 16),
-        Text(
-          gesture.toUpperCase(), // Make it stand out
-          style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                color: Theme.of(context).colorScheme.primary,
-                fontWeight: FontWeight.bold,
-              ),
-          textAlign: TextAlign.center,
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+          child: Text(
+            gesture,
+            style: Theme.of(context).textTheme.displaySmall?.copyWith(
+                  color: colorScheme.primary,
+                  fontWeight: FontWeight.bold,
+                ),
+            textAlign: TextAlign.center,
+            maxLines: 3,
+            overflow: TextOverflow.ellipsis,
+          ),
         ),
       ],
     );
