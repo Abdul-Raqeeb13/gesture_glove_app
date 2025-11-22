@@ -77,30 +77,30 @@ class GestureDisplayPage extends StatelessWidget {
             const SizedBox(height: 48),
 
             // Gesture Display Header
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  l.lastGesture,
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                ),
-                const SizedBox(width: 8),
-                if (ttsProvider.isTtsEnabled)
-                  Icon(
-                    Icons.volume_up_rounded,
-                    color: colorScheme.primary,
-                    size: 24,
-                  )
-                else
-                  Icon(
-                    Icons.volume_off_rounded,
-                    color: colorScheme.onSurface.withOpacity(0.3),
-                    size: 24,
-                  ),
-              ],
-            ),
+            // Row(
+            //   mainAxisAlignment: MainAxisAlignment.center,
+            //   children: [
+            //     Text(
+            //       l.lastGesture,
+            //       style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+            //             fontWeight: FontWeight.bold,
+            //           ),
+            //     ),
+            //     const SizedBox(width: 8),
+            //     if (ttsProvider.isTtsEnabled)
+            //       Icon(
+            //         Icons.volume_up_rounded,
+            //         color: colorScheme.primary,
+            //         size: 24,
+            //       )
+            //     else
+            //       Icon(
+            //         Icons.volume_off_rounded,
+            //         color: colorScheme.onSurface.withOpacity(0.3),
+            //         size: 24,
+            //       ),
+            //   ],
+            // ),
             const SizedBox(height: 16),
 
             // Main Gesture Display
@@ -165,31 +165,31 @@ class GestureDisplayPage extends StatelessWidget {
                         color: colorScheme.outline.withOpacity(0.3),
                       ),
                     ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          "Debug Info:",
-                          style:
-                              Theme.of(context).textTheme.labelSmall?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          "• Gesture: \"$gesture\"",
-                          style: Theme.of(context).textTheme.bodySmall,
-                        ),
-                        Text(
-                          "• TTS Enabled: ${ttsProvider.isTtsEnabled}",
-                          style: Theme.of(context).textTheme.bodySmall,
-                        ),
-                        Text(
-                          "• Connected: $isConnected",
-                          style: Theme.of(context).textTheme.bodySmall,
-                        ),
-                      ],
-                    ),
+                    // child: Column(
+                    //   crossAxisAlignment: CrossAxisAlignment.start,
+                    //   children: [
+                    //     Text(
+                    //       "Debug Info:",
+                    //       style:
+                    //           Theme.of(context).textTheme.labelSmall?.copyWith(
+                    //                 fontWeight: FontWeight.bold,
+                    //               ),
+                    //     ),
+                    //     const SizedBox(height: 4),
+                    //     Text(
+                    //       "• Gesture: \"$gesture\"",
+                    //       style: Theme.of(context).textTheme.bodySmall,
+                    //     ),
+                    //     Text(
+                    //       "• TTS Enabled: ${ttsProvider.isTtsEnabled}",
+                    //       style: Theme.of(context).textTheme.bodySmall,
+                    //     ),
+                    //     Text(
+                    //       "• Connected: $isConnected",
+                    //       style: Theme.of(context).textTheme.bodySmall,
+                    //     ),
+                    //   ],
+                    // ),
                   ),
                 ],
               ),

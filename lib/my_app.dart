@@ -21,8 +21,8 @@ class MyApp extends StatelessWidget {
     final localeProvider = context.watch<LocaleProvider>();
 
     return MaterialApp(
-      title: 'Gesture Glove App', // Updated title
-
+      title: 'Glovox', // Updated title
+      debugShowCheckedModeBanner: false,
       // --- Localization ---
       locale: localeProvider.locale,
       supportedLocales: L10n.all,
