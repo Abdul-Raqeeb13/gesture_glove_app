@@ -21,6 +21,7 @@
   "disconnect": "Desconectar",
   "connected": "Conectado",
   "disconnected": "Desconectado",
+  "findDevices" : "Find Devices",
   "lookingForDevices": "Buscando dispositivos...",
   "noDevicesFound": "No se encontraron dispositivos",
   "selectDevice": "Selecciona un dispositivo",

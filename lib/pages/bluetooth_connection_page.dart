@@ -13,23 +13,10 @@ class BluetoothConnectionPage extends StatefulWidget {
 }
 
 class _BluetoothConnectionPageState extends State<BluetoothConnectionPage> {
-  @override
-  void initState() {
-    super.initState();
-    // When this page loads, start scanning for devices
-    // We use a post-frame callback to make sure the provider is available
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        Provider.of<BluetoothProvider>(context, listen: false)
-            .requestPermissionsAndScan();
-      }
-    });
-  }
+  BluetoothDevice? connectingDevice; // <-- track the device being connected
 
   @override
   void dispose() {
-    // When we leave this page, stop scanning to save battery
-    // We check if the provider is still mounted before accessing it.
     if (mounted) {
       Provider.of<BluetoothProvider>(context, listen: false).stopScan();
     }
@@ -44,6 +31,20 @@ class _BluetoothConnectionPageState extends State<BluetoothConnectionPage> {
     return Scaffold(
       appBar: AppBar(
         title: Text(l.bluetoothSettings),
+        actions: [
+          // ---------- FIND DEVICES BUTTON ----------
+          if (!provider.isConnected)
+            IconButton(
+              icon: const Icon(Icons.search),
+              tooltip: "Find Devices",
+              onPressed: provider.isScanning
+                  ? null
+                  : () async {
+                      setState(() => connectingDevice = null);
+                      provider.requestPermissionsAndScan();
+                    },
+            ),
+        ],
       ),
       body: Column(
         children: [
@@ -53,7 +54,7 @@ class _BluetoothConnectionPageState extends State<BluetoothConnectionPage> {
           else
             _buildPermissionCard(context, l, provider),
 
-          // --- LIST OF AVAILABLE DEVICES ---
+          // --- DEVICE LIST ---
           Expanded(
             child: provider.isScanning
                 ? Center(
@@ -66,30 +67,23 @@ class _BluetoothConnectionPageState extends State<BluetoothConnectionPage> {
                       ],
                     ),
                   )
-                : RefreshIndicator(
-                    onRefresh: provider.requestPermissionsAndScan,
-                    child: provider.availableDevices.isEmpty
-                        ? Center(
-                            child: SingleChildScrollView(
-                              physics: const AlwaysScrollableScrollPhysics(),
-                              child: Padding(
-                                padding: const EdgeInsets.all(16.0),
-                                child: Text(
-                                  l.noDevicesFound,
-                                  textAlign: TextAlign.center,
-                                ),
-                              ),
-                            ),
-                          )
-                        : ListView.builder(
-                            itemCount: provider.availableDevices.length,
-                            itemBuilder: (context, index) {
-                              final device = provider.availableDevices[index];
-                              return _buildDeviceTile(
-                                  context, l, provider, device);
-                            },
+                : provider.availableDevices.isEmpty
+                    ? Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: Text(
+                            l.noDevicesFound,
+                            textAlign: TextAlign.center,
                           ),
-                  ),
+                        ),
+                      )
+                    : ListView.builder(
+                        itemCount: provider.availableDevices.length,
+                        itemBuilder: (context, index) {
+                          final device = provider.availableDevices[index];
+                          return _buildDeviceTile(context, l, provider, device);
+                        },
+                      ),
           ),
         ],
       ),
@@ -102,23 +96,31 @@ class _BluetoothConnectionPageState extends State<BluetoothConnectionPage> {
     BluetoothProvider provider,
     BluetoothDevice device,
   ) {
+    final bool isThisOneConnecting =
+        (connectingDevice?.address == device.address);
+
     return ListTile(
       leading: const Icon(Icons.bluetooth),
       title: Text(device.name ?? "Unknown Device"),
       subtitle: Text(device.address),
-      trailing: provider.isConnecting
+      trailing: isThisOneConnecting
           ? const SizedBox(
-              width: 24, height: 24, child: CircularProgressIndicator())
+              width: 26, height: 26, child: CircularProgressIndicator())
           : ElevatedButton(
               child: Text(l.connect),
-              onPressed: () async {
-                final success = await provider.connectToDevice(device);
-                if (success && mounted) {
-                  // Go back to the previous screen (home) after connecting
-                  Navigator.of(context).pop();
-                }
-                // Handle connection failure (snackbar, etc.) if you want
-              },
+              onPressed: (connectingDevice != null) // disable other buttons
+                  ? null
+                  : () async {
+                      setState(() => connectingDevice = device);
+
+                      final success = await provider.connectToDevice(device);
+
+                      if (success && mounted) {
+                        Navigator.of(context).pop();
+                      }
+
+                      setState(() => connectingDevice = null);
+                    },
             ),
     );
   }
@@ -157,15 +159,15 @@ class _BluetoothConnectionPageState extends State<BluetoothConnectionPage> {
               color: Theme.of(context).colorScheme.onSurfaceVariant),
           title: Text(l.disconnected),
           trailing: ElevatedButton(
-            child: Text(l.connect), // Changed from "Select Device"
+            child: Text(l.findDevices),
             onPressed: () {
+              connectingDevice = null;
               provider.requestPermissionsAndScan();
             },
           ),
         ),
       );
     } else {
-      // Permissions are denied
       return Card(
         margin: const EdgeInsets.all(16.0),
         color: Theme.of(context).colorScheme.errorContainer,

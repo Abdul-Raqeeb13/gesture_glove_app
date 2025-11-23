@@ -20,6 +20,8 @@ class BluetoothProvider with ChangeNotifier {
   StreamSubscription<BluetoothDiscoveryResult>? _scanSubscription;
   StreamSubscription<Uint8List>? _dataSubscription;
   String _dataBuffer = '';
+  // Private timer for managing the scan timeout
+  Timer? _scanTimer;
 
   // --- Public State ---
   bool _permissionsGranted = false;
@@ -82,6 +84,16 @@ class BluetoothProvider with ChangeNotifier {
     _isScanning = true;
     notifyListeners();
 
+    // 🎯 START TIMEOUT TIMER (10 seconds)
+    _scanTimer?.cancel(); // Cancel any existing timer
+    _scanTimer = Timer(const Duration(seconds: 10), () {
+      if (_isScanning) {
+        debugPrint(
+            "Scan timeout reached (10 seconds), automatically stopping scan.");
+        stopScan();
+      }
+    });
+
     _scanSubscription = _bluetooth.startDiscovery().listen(
       (result) {
         bool deviceExists = _availableDevices
@@ -95,11 +107,13 @@ class BluetoothProvider with ChangeNotifier {
       },
       onDone: () {
         debugPrint("Scan finished.");
+        _scanTimer?.cancel(); // Stop the timer when the scan is done
         _isScanning = false;
         notifyListeners();
       },
       onError: (error) {
         debugPrint("Scan error: $error");
+        _scanTimer?.cancel(); // Stop the timer on error
         _isScanning = false;
         notifyListeners();
       },
@@ -108,6 +122,7 @@ class BluetoothProvider with ChangeNotifier {
 
   void stopScan() {
     debugPrint("Stopping scan.");
+    _scanTimer?.cancel(); // Ensure the timer is stopped on manual stop
     _scanSubscription?.cancel();
     _scanSubscription = null;
     _isScanning = false;
@@ -229,6 +244,7 @@ class BluetoothProvider with ChangeNotifier {
     disconnect();
     _scanSubscription?.cancel();
     _dataSubscription?.cancel();
+    _scanTimer?.cancel(); // Clean up the timer when the provider is disposed
     super.dispose();
   }
 }
