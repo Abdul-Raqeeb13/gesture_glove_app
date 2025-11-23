@@ -7,6 +7,9 @@ import 'my_app.dart';
 import 'providers/theme_provider.dart';
 import 'providers/locale_provider.dart';
 
+// 🎯 DEFINE THE CUSTOM COLOR GLOBALLY HERE
+const Color customPrimaryColor = Color(0xFF023e7d);
+
 void main() async {
   // Ensure widgets are initialized before running the app
   WidgetsFlutterBinding.ensureInitialized();

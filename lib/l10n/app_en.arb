@@ -20,7 +20,7 @@
   "connect": "Connect",
   "disconnect": "Disconnect",
   "connected": "Connected",
-  "disconnected": "Disconnected",
+  "disconnected": "Disconected",
   "findDevices" : "Find Devices",
   "lookingForDevices": "Looking for devices...",
   "noDevicesFound": "No devices found",

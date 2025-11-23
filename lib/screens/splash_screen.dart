@@ -12,7 +12,7 @@ class SplashScreen extends StatefulWidget {
 class _SplashScreenState extends State<SplashScreen> {
   // Define a custom primary color that matches the orange in the image
   static const Color _customOrange =
-      Color(0xFFFF8C42); // A vibrant, soft orange
+      Color(0xFF023e7d); // A vibrant, soft orange
 
   @override
   void initState() {

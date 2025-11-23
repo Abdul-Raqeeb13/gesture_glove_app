@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:gesture_glove_app/main.dart';
 import 'package:gesture_glove_app/providers/bluetooth_provider.dart';
 import 'package:gesture_glove_app/providers/tts_provider.dart';
 import 'package:provider/provider.dart';
@@ -10,7 +11,7 @@ class GestureDisplayPage extends StatelessWidget {
 
   // Define a strong primary color (like the indigo/purple in the image)
   // We use this as a fallback if the theme doesn't provide a vibrant primary.
-  static const Color _primaryHeaderColor = Color(0xFF673AB7); // Deep Purple
+  // static const Color _primaryHeaderColor = Color(0xFF673AB7); // Deep Purple
 
   @override
   Widget build(BuildContext context) {
@@ -26,7 +27,7 @@ class GestureDisplayPage extends StatelessWidget {
         gesture.toLowerCase() == "no gesture";
 
     // Use a custom color for the header area
-    final headerColor = colorScheme.primary;
+    final headerColor = customPrimaryColor;
 
     return Scaffold(
       // The background color of the scaffold serves as the visible border around the header
@@ -68,7 +69,8 @@ class GestureDisplayPage extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       // Main content structure
-                      _buildGestureHeader(context, l, ttsProvider, colorScheme),
+                      _buildGestureHeader(context, l, ttsProvider, btProvider,
+                          colorScheme), // Pass btProvider here
                       const SizedBox(height: 24),
 
                       // NOTE: _buildGestureDisplayBox now uses fully static decoration
@@ -131,8 +133,6 @@ class GestureDisplayPage extends StatelessWidget {
                 ),
           ),
 
-          // Spacer ensures the middle area remains empty, pushing the status row down
-
           // ADDED SMALL VERTICAL SPACE HERE
           const SizedBox(height: 8),
 
@@ -159,27 +159,50 @@ class GestureDisplayPage extends StatelessWidget {
   }
 
   // --- MODIFIED: Restored title text, kept TTS icon alignment ---
-  Widget _buildGestureHeader(BuildContext context, AppLocalizations l,
-      TtsProvider ttsProvider, ColorScheme colorScheme) {
+  Widget _buildGestureHeader(
+      BuildContext context,
+      AppLocalizations l,
+      TtsProvider ttsProvider,
+      BluetoothProvider btProvider,
+      ColorScheme colorScheme) {
+    // Added btProvider argument
+
+    final primaryColor = customPrimaryColor;
+    final isTtsEnabled = ttsProvider.isTtsEnabled;
+    final String currentGesture = btProvider.lastGesture;
+    final bool canSpeak = currentGesture.isNotEmpty &&
+        currentGesture.toLowerCase() != "none" &&
+        currentGesture.toLowerCase() != "no gesture";
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         // Title Text restored here
         Text(
-          "Current Gesture Status",
+          " Gesture Status",
           style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                 fontWeight: FontWeight.w700,
-                color: colorScheme.onSurface,
+                color: customPrimaryColor,
               ),
         ),
-        Icon(
-          ttsProvider.isTtsEnabled
-              ? Icons.record_voice_over_rounded
-              : Icons.volume_off_rounded,
-          color: ttsProvider.isTtsEnabled
-              ? colorScheme.primary
-              : colorScheme.outline,
-          size: 30,
+
+        // TTS Status Icon (Now clickable for replay)
+        IconButton(
+          padding: EdgeInsets.zero,
+          constraints: const BoxConstraints(),
+          icon: Icon(
+            ttsProvider.isTtsEnabled
+                ? Icons.record_voice_over_rounded
+                : Icons.volume_off_rounded,
+            color: isTtsEnabled ? primaryColor : colorScheme.outline,
+            size: 30,
+          ),
+          onPressed: isTtsEnabled && canSpeak
+              ? () {
+                  // ACTION: Speak the current gesture word again
+                  ttsProvider.speak(currentGesture);
+                }
+              : null, // Disable if TTS is off or no valid gesture is detected
         ),
       ],
     );
@@ -234,11 +257,11 @@ class GestureDisplayPage extends StatelessWidget {
       bool isWaiting, ColorScheme colorScheme) {
     // Icon color: muted when waiting, vibrant when gesture detected
     final Color iconColor =
-        isWaiting ? colorScheme.primary.withOpacity(0.5) : colorScheme.primary;
+        isWaiting ? customPrimaryColor.withOpacity(0.8) : customPrimaryColor;
 
     // Text color: muted when waiting, vibrant when gesture detected
     final Color textColor =
-        isWaiting ? colorScheme.primary.withOpacity(0.7) : colorScheme.primary;
+        isWaiting ? customPrimaryColor.withOpacity(0.8) : customPrimaryColor;
 
     // Determine the icon and text to display
     final IconData icon =

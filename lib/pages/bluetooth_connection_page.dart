@@ -3,6 +3,9 @@ import 'package:gesture_glove_app/providers/bluetooth_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_bluetooth_serial/flutter_bluetooth_serial.dart';
+import 'package:gesture_glove_app/main.dart'; // Ensure customPrimaryColor is imported
+
+// NOTE: customPrimaryColor is assumed to be defined in main.dart and imported above.
 
 class BluetoothConnectionPage extends StatefulWidget {
   const BluetoothConnectionPage({super.key});
@@ -23,6 +26,17 @@ class _BluetoothConnectionPageState extends State<BluetoothConnectionPage> {
     super.dispose();
   }
 
+  // Helper method to access customPrimaryColor (assuming it's defined globally)
+  Color get _primaryColor => customPrimaryColor;
+
+  // --- Adaptive Color Helpers ---
+  bool get _isDarkMode => Theme.of(context).brightness == Brightness.dark;
+  Color get _adaptiveContentColor =>
+      _isDarkMode ? Colors.white : Theme.of(context).colorScheme.onBackground;
+  Color get _adaptiveSubduedColor => _isDarkMode
+      ? Colors.white.withOpacity(0.7)
+      : Theme.of(context).colorScheme.onSurface.withOpacity(0.7);
+
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context)!;
@@ -30,23 +44,37 @@ class _BluetoothConnectionPageState extends State<BluetoothConnectionPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(l.bluetoothSettings),
+        // AppBar title color is adaptive
+        title: Text(l.bluetoothSettings,
+            style: TextStyle(color: _adaptiveContentColor)),
+        elevation: 0, // Modern flat design
+        backgroundColor: Theme.of(context).colorScheme.background,
         actions: [
-          // ---------- FIND DEVICES BUTTON ----------
+          // ---------- FIND DEVICES BUTTON (Styled) ----------
           if (!provider.isConnected)
-            IconButton(
-              icon: const Icon(Icons.search),
-              tooltip: "Find Devices",
-              onPressed: provider.isScanning
-                  ? null
-                  : () async {
-                      setState(() => connectingDevice = null);
-                      provider.requestPermissionsAndScan();
-                    },
+            Padding(
+              padding: const EdgeInsets.only(right: 5.0),
+              child: IconButton(
+                icon: const Icon(Icons.refresh_rounded),
+                tooltip: "Find Devices",
+                color: provider.isScanning
+                    ? _adaptiveSubduedColor // Subdued color when scanning
+                    // Find Devices icon color is white in Dark Mode, primary in Light Mode
+                    : _isDarkMode
+                        ? Colors.white
+                        : _primaryColor,
+                onPressed: provider.isScanning
+                    ? null
+                    : () async {
+                        setState(() => connectingDevice = null);
+                        provider.requestPermissionsAndScan();
+                      },
+              ),
             ),
         ],
       ),
       body: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // --- CURRENT CONNECTION STATUS ---
           if (provider.isConnected)
@@ -54,16 +82,29 @@ class _BluetoothConnectionPageState extends State<BluetoothConnectionPage> {
           else
             _buildPermissionCard(context, l, provider),
 
-          // --- DEVICE LIST ---
+          // --- DEVICE LIST HEADER (Styled) ---
+          Padding(
+            padding: const EdgeInsets.only(left: 18.0, top: 16.0, bottom: 8.0),
+            child: Text(
+              'Available Devices',
+              style: Theme.of(context).textTheme.titleLarge!.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: _adaptiveContentColor,
+                  ),
+            ),
+          ),
+
+          // --- DEVICE LIST / STATUS VIEW ---
           Expanded(
             child: provider.isScanning
                 ? Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const CircularProgressIndicator(),
+                        CircularProgressIndicator(color: _primaryColor),
                         const SizedBox(height: 16),
-                        Text(l.lookingForDevices),
+                        Text(l.lookingForDevices,
+                            style: TextStyle(color: _adaptiveContentColor)),
                       ],
                     ),
                   )
@@ -71,10 +112,12 @@ class _BluetoothConnectionPageState extends State<BluetoothConnectionPage> {
                     ? Center(
                         child: Padding(
                           padding: const EdgeInsets.all(16.0),
-                          child: Text(
-                            l.noDevicesFound,
-                            textAlign: TextAlign.center,
-                          ),
+                          child: Text(l.noDevicesFound,
+                              textAlign: TextAlign.center,
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodyLarge!
+                                  .copyWith(color: _adaptiveSubduedColor)),
                         ),
                       )
                     : ListView.builder(
@@ -90,6 +133,8 @@ class _BluetoothConnectionPageState extends State<BluetoothConnectionPage> {
     );
   }
 
+  // --- STYLISH HELPER METHODS ---
+
   Widget _buildDeviceTile(
     BuildContext context,
     AppLocalizations l,
@@ -98,48 +143,101 @@ class _BluetoothConnectionPageState extends State<BluetoothConnectionPage> {
   ) {
     final bool isThisOneConnecting =
         (connectingDevice?.address == device.address);
+    final Color primaryColor = _primaryColor;
 
-    return ListTile(
-      leading: const Icon(Icons.bluetooth),
-      title: Text(device.name ?? "Unknown Device"),
-      subtitle: Text(device.address),
-      trailing: isThisOneConnecting
-          ? const SizedBox(
-              width: 26, height: 26, child: CircularProgressIndicator())
-          : ElevatedButton(
-              child: Text(l.connect),
-              onPressed: (connectingDevice != null) // disable other buttons
-                  ? null
-                  : () async {
-                      setState(() => connectingDevice = device);
+    // Adaptive colors:
+    final Color adaptiveTextColor =
+        _isDarkMode ? Colors.white : Theme.of(context).colorScheme.onSurface;
+    final Color defaultIconColor =
+        _isDarkMode ? Colors.white : Theme.of(context).colorScheme.onSurface;
 
-                      final success = await provider.connectToDevice(device);
-
-                      if (success && mounted) {
-                        Navigator.of(context).pop();
-                      }
-
-                      setState(() => connectingDevice = null);
-                    },
-            ),
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
+      decoration: BoxDecoration(
+        color: isThisOneConnecting
+            ? primaryColor.withOpacity(0.1)
+            : Colors.transparent,
+        borderRadius: BorderRadius.circular(12.0),
+      ),
+      child: ListTile(
+        leading: Icon(
+          Icons.bluetooth,
+          color: isThisOneConnecting
+              ? primaryColor
+              : defaultIconColor.withOpacity(0.7), // Icon color is adaptive
+        ),
+        title: Text(
+          device.name ?? "Unknown Device",
+          style: TextStyle(
+              fontWeight: FontWeight.w500,
+              color: adaptiveTextColor), // Text color is adaptive
+        ),
+        subtitle: Text(
+          device.address,
+          style: TextStyle(
+              color:
+                  adaptiveTextColor.withOpacity(0.6)), // Subdued adaptive color
+        ),
+        trailing: isThisOneConnecting
+            ? SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                    strokeWidth: 2.5, color: primaryColor))
+            : ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: primaryColor,
+                  // FIX: Ensure button text is white in Dark Mode by using Colors.white
+                  // or relying on onPrimary, which is the desired fallback here.
+                  foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8)),
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  elevation: 0, // Flat design
+                ),
+                child: Text(l.connect), // Connect button text is adaptive
+                onPressed: (connectingDevice != null)
+                    ? null
+                    : () async {
+                        setState(() => connectingDevice = device);
+                        final success = await provider.connectToDevice(device);
+                        if (success && mounted) {
+                          Navigator.of(context).pop();
+                        }
+                        setState(() => connectingDevice = null);
+                      },
+              ),
+      ),
     );
   }
 
   Widget _buildConnectionCard(
       BuildContext context, AppLocalizations l, BluetoothProvider provider) {
+    final successColor = Colors.green.shade400;
     return Card(
-      margin: const EdgeInsets.all(16.0),
-      color: Colors.green.withOpacity(0.1),
+      margin: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+      shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(15)), // Stylish rounded card
+      color: successColor.withOpacity(0.1), // Subtle green background
       child: ListTile(
-        leading: const Icon(Icons.bluetooth_connected, color: Colors.green),
-        title: Text(l.connected),
-        subtitle: Text(provider.connectedDeviceName),
-        trailing: ElevatedButton(
+        leading: Icon(Icons.bluetooth_connected, color: successColor, size: 30),
+        title: Text(l.connected,
+            style: Theme.of(context).textTheme.titleMedium!.copyWith(
+                fontWeight: FontWeight.w600,
+                color: _adaptiveContentColor)), // Title text is adaptive
+        subtitle: Text(provider.connectedDeviceName,
+            style: TextStyle(
+                color: _adaptiveSubduedColor)), // Subtitle text is adaptive
+        trailing: ElevatedButton.icon(
+          // Used icon button for disconnect
           style: ElevatedButton.styleFrom(
             backgroundColor: Theme.of(context).colorScheme.error,
             foregroundColor: Theme.of(context).colorScheme.onError,
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
           ),
-          child: Text(l.disconnect),
+          icon: const Icon(Icons.close, size: 18),
+          label: Text(l.disconnect),
           onPressed: () {
             provider.disconnect();
           },
@@ -151,15 +249,30 @@ class _BluetoothConnectionPageState extends State<BluetoothConnectionPage> {
   Widget _buildPermissionCard(
       BuildContext context, AppLocalizations l, BluetoothProvider provider) {
     if (provider.permissionsGranted) {
+      // Disconnected Card (Ready to Scan)
       return Card(
-        margin: const EdgeInsets.all(16.0),
+        margin: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
         color: Theme.of(context).colorScheme.surfaceVariant,
         child: ListTile(
           leading: Icon(Icons.bluetooth_disabled,
-              color: Theme.of(context).colorScheme.onSurfaceVariant),
-          title: Text(l.disconnected),
+              color: _isDarkMode ? Colors.white : _primaryColor,
+              size: 30), // Icon color is adaptive
+          title: Text(l.disconnected,
+              style: Theme.of(context).textTheme.titleMedium!.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: _adaptiveContentColor)), // Title text is adaptive
           trailing: ElevatedButton(
-            child: Text(l.findDevices),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: _primaryColor,
+              // FIX: Ensure button text is white in Dark Mode
+              foregroundColor: _isDarkMode
+                  ? Colors.white
+                  : Theme.of(context).colorScheme.onPrimary,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8)),
+            ),
+            child: Text(l.findDevices), // Find Devices button text is adaptive
             onPressed: () {
               connectingDevice = null;
               provider.requestPermissionsAndScan();
@@ -168,16 +281,24 @@ class _BluetoothConnectionPageState extends State<BluetoothConnectionPage> {
         ),
       );
     } else {
+      // Permissions Denied Card (Warning)
       return Card(
-        margin: const EdgeInsets.all(16.0),
+        margin: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
         color: Theme.of(context).colorScheme.errorContainer,
         child: ListTile(
-          leading:
-              Icon(Icons.warning, color: Theme.of(context).colorScheme.error),
-          title: Text(l.permissionsDenied),
-          subtitle: Text(l.pleaseGrantPermissions),
+          leading: Icon(Icons.warning,
+              color: Theme.of(context).colorScheme.error, size: 30),
+          title: Text(l.permissionsDenied,
+              style: Theme.of(context).textTheme.titleMedium!.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: _adaptiveContentColor)), // Title text is adaptive
+          subtitle: Text(l.pleaseGrantPermissions,
+              style: TextStyle(
+                  color: _adaptiveSubduedColor)), // Subtitle text is adaptive
           trailing: IconButton(
-            icon: const Icon(Icons.settings),
+            icon: Icon(Icons.settings,
+                color: Theme.of(context).colorScheme.error),
             onPressed: () {
               provider.openAppSettings();
             },

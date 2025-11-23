@@ -9,7 +9,8 @@ import 'screens/splash_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/settings_screen.dart';
 import 'screens/learning_screen.dart';
-import 'pages/bluetooth_connection_page.dart'; // <-- This is the fix
+import 'pages/bluetooth_connection_page.dart';
+import '../main.dart'; // Import to access customPrimaryColor
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
@@ -31,7 +32,7 @@ class MyApp extends StatelessWidget {
       // --- Theme ---
       themeMode: themeProvider.themeMode,
 
-      // --- Light Theme (Pure White) ---
+      // --- Light Theme (Uses Custom Orange) ---
       theme: ThemeData(
         brightness: Brightness.light,
         visualDensity: VisualDensity.adaptivePlatformDensity,
@@ -45,9 +46,9 @@ class MyApp extends StatelessWidget {
           scrolledUnderElevation: 0,
         ),
 
-        // --- Modern ColorScheme ---
+        // 🎯 FIX: Use customPrimaryColor as the brand color
         colorScheme: ColorScheme.fromSeed(
-          seedColor: Colors.blue, // Your main brand color for buttons, etc.
+          seedColor: customPrimaryColor, // <--- Using the orange color
           brightness: Brightness.light,
         ).copyWith(
           // Keep your original custom error colors
@@ -56,7 +57,7 @@ class MyApp extends StatelessWidget {
         ),
       ),
 
-      // --- Dark Theme (Pure Black) ---
+      // --- Dark Theme (Uses Custom Orange) ---
       darkTheme: ThemeData(
         brightness: Brightness.dark,
         visualDensity: VisualDensity.adaptivePlatformDensity,
@@ -70,9 +71,9 @@ class MyApp extends StatelessWidget {
           scrolledUnderElevation: 0,
         ),
 
-        // --- Modern ColorScheme ---
+        // 🎯 FIX: Use customPrimaryColor as the brand color
         colorScheme: ColorScheme.fromSeed(
-          seedColor: Colors.blue, // Use *same* seed color for consistency
+          seedColor: customPrimaryColor, // <--- Using the orange color
           brightness: Brightness.dark,
         ).copyWith(
           // Keep your original custom error colors
