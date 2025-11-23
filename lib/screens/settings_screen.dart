@@ -148,9 +148,43 @@ class SettingsScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(l.settings),
+        backgroundColor: Colors.transparent,
         elevation: 0,
-        backgroundColor: Theme.of(context).colorScheme.background,
+
+        // --- ADDED: Set iconTheme to white for drawer/back buttons ---
+        iconTheme: const IconThemeData(
+          color: Colors.white,
+        ),
+
+        toolbarHeight: 70,
+
+        flexibleSpace: Container(
+          decoration: BoxDecoration(
+            // Apply the gradient using your colors
+            gradient: LinearGradient(
+              colors: [customPrimaryColor, gradientSecondaryColor],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            // Optional: Add a subtle shadow for elevation effect
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.2),
+                blurRadius: 4,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+        ),
+
+        // --- MODIFIED: Apply TextStyle directly to the Text widget ---
+        title: Text(
+          l.settings,
+          style: const TextStyle(
+            color: Colors.white, // Set title text color to white
+            fontWeight: FontWeight.bold,
+          ),
+        ),
       ),
       body: ListView(
         padding: const EdgeInsets.all(18.0),

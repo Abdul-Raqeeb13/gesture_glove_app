@@ -9,6 +9,8 @@ import 'providers/locale_provider.dart';
 
 // 🎯 DEFINE THE CUSTOM COLOR GLOBALLY HERE
 const Color customPrimaryColor = Color(0xFF023e7d);
+const Color gradientSecondaryColor =
+    Color.fromARGB(159, 3, 49, 129); // Your desired secondary color
 
 void main() async {
   // Ensure widgets are initialized before running the app

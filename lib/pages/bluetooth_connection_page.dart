@@ -44,34 +44,43 @@ class _BluetoothConnectionPageState extends State<BluetoothConnectionPage> {
 
     return Scaffold(
       appBar: AppBar(
-        // AppBar title color is adaptive
-        title: Text(l.bluetoothSettings,
-            style: TextStyle(color: _adaptiveContentColor)),
-        elevation: 0, // Modern flat design
-        backgroundColor: Theme.of(context).colorScheme.background,
-        actions: [
-          // ---------- FIND DEVICES BUTTON (Styled) ----------
-          if (!provider.isConnected)
-            Padding(
-              padding: const EdgeInsets.only(right: 5.0),
-              child: IconButton(
-                icon: const Icon(Icons.refresh_rounded),
-                tooltip: "Find Devices",
-                color: provider.isScanning
-                    ? _adaptiveSubduedColor // Subdued color when scanning
-                    // Find Devices icon color is white in Dark Mode, primary in Light Mode
-                    : _isDarkMode
-                        ? Colors.white
-                        : _primaryColor,
-                onPressed: provider.isScanning
-                    ? null
-                    : () async {
-                        setState(() => connectingDevice = null);
-                        provider.requestPermissionsAndScan();
-                      },
-              ),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+
+        // --- ADDED: Set iconTheme to white for drawer/back buttons ---
+        iconTheme: const IconThemeData(
+          color: Colors.white,
+        ),
+
+        toolbarHeight: 70,
+
+        flexibleSpace: Container(
+          decoration: BoxDecoration(
+            // Apply the gradient using your colors
+            gradient: LinearGradient(
+              colors: [customPrimaryColor, gradientSecondaryColor],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
             ),
-        ],
+            // Optional: Add a subtle shadow for elevation effect
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.2),
+                blurRadius: 4,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+        ),
+
+        // --- MODIFIED: Apply TextStyle directly to the Text widget ---
+        title: Text(
+          l.bluetoothSettings,
+          style: const TextStyle(
+            color: Colors.white, // Set title text color to white
+            fontWeight: FontWeight.bold,
+          ),
+        ),
       ),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

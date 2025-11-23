@@ -45,11 +45,12 @@ class _SplashScreenState extends State<SplashScreen> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
+                const SizedBox(height: 100),
                 // Custom Illustrated Logo Section (Inspired by the panda's wave)
                 const _IllustratedLogo(
                   color: Colors.white,
                 ),
-                const SizedBox(height: 32),
+                const SizedBox(height: 25),
 
                 // App Title
                 const Text(
@@ -71,15 +72,15 @@ class _SplashScreenState extends State<SplashScreen> {
                 const SizedBox(height: 48),
 
                 // Loader (Styled to match the background)
-                SizedBox(
-                  width: 50,
-                  height: 50,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 5,
-                    color: Colors.white,
-                    backgroundColor: Colors.white.withOpacity(0.3),
-                  ),
-                ),
+                // SizedBox(
+                //   width: 50,
+                //   height: 50,
+                //   child: CircularProgressIndicator(
+                //     strokeWidth: 5,
+                //     color: Colors.white,
+                //     backgroundColor: Colors.white.withOpacity(0.3),
+                //   ),
+                // ),
               ],
             ),
           ),
@@ -167,12 +168,12 @@ class _buildBackgroundIllustration extends StatelessWidget {
       children: [
         // Clouds (Softly toned orange/white)
         const _AnimatedCloud(top: 80, left: 20, color: Colors.white),
-        const _AnimatedCloud(top: 50, left: 150, color: Colors.white),
+        const _AnimatedCloud(top: 580, left: 190, color: Colors.white),
 
         // Stars/Sparkles
         _buildSparkle(150, 50),
-        _buildSparkle(300, 200),
-        _buildSparkle(100, 300),
+        // _buildSparkle(500, 270),
+        _buildSparkle(700, 300),
       ],
     );
   }

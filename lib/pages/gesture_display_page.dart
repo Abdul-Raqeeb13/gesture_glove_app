@@ -9,18 +9,12 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 class GestureDisplayPage extends StatelessWidget {
   const GestureDisplayPage({super.key});
 
-  // Define a strong primary color (like the indigo/purple in the image)
-  // We use this as a fallback if the theme doesn't provide a vibrant primary.
-  // static const Color _primaryHeaderColor = Color(0xFF673AB7); // Deep Purple
-
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context)!;
     final btProvider = context.watch<BluetoothProvider>();
     final ttsProvider = context.watch<TtsProvider>();
     final colorScheme = Theme.of(context).colorScheme;
-    final bool isConnected = btProvider.isConnected;
-
     final String gesture = btProvider.lastGesture;
     final bool isWaiting = gesture.isEmpty ||
         gesture.toLowerCase() == "none" ||
@@ -30,7 +24,6 @@ class GestureDisplayPage extends StatelessWidget {
     final headerColor = customPrimaryColor;
 
     return Scaffold(
-      // The background color of the scaffold serves as the visible border around the header
       backgroundColor: colorScheme.background,
       body: Column(
         children: [
@@ -42,9 +35,8 @@ class GestureDisplayPage extends StatelessWidget {
             child: SingleChildScrollView(
               // Using Transform.translate to lift the content card up and overlap the header
               child: Transform.translate(
-                offset: const Offset(0.0, -50.0), // Shift content up by 50px
+                offset: const Offset(0.0, -35.0), // Shift content up by 50px
                 child: Container(
-                  // *** MODIFIED: Increased top and bottom padding for visual security ***
                   padding: const EdgeInsets.only(
                       top: 60.0,
                       left: 24.0,
@@ -52,7 +44,9 @@ class GestureDisplayPage extends StatelessWidget {
                       bottom: 60.0), // Increased top and bottom padding
                   width: double.infinity,
                   decoration: BoxDecoration(
-                    color: colorScheme.surface, // Light background for the card
+                    color:
+                        colorScheme.surface, // Adaptive background for the card
+                    // NOTE: This card MUST have rounded top corners
                     borderRadius: const BorderRadius.only(
                       topLeft: Radius.circular(50),
                       topRight: Radius.circular(50),
@@ -73,7 +67,7 @@ class GestureDisplayPage extends StatelessWidget {
                           colorScheme), // Pass btProvider here
                       const SizedBox(height: 24),
 
-                      // NOTE: _buildGestureDisplayBox now uses fully static decoration
+                      // Gesture Display Box
                       _buildGestureDisplayBox(
                           context, gesture, isWaiting, colorScheme),
                       const SizedBox(height: 32),
@@ -97,7 +91,6 @@ class GestureDisplayPage extends StatelessWidget {
   ) {
     final isConnected = btProvider.isConnected;
 
-    // Logic for the dynamic status row at the bottom of the header
     final statusColor =
         isConnected ? Colors.lightGreenAccent : Colors.redAccent;
     final statusIcon =
@@ -108,11 +101,16 @@ class GestureDisplayPage extends StatelessWidget {
 
     return Container(
       width: double.infinity,
-      height: 220, // Fixed height for the header area
+      height: 190, // Fixed height for the header area
       padding: const EdgeInsets.fromLTRB(
           24, 60, 24, 24), // Use 60 for safe space below status bar
       decoration: BoxDecoration(
         color: headerColor,
+        // FIX: Add rounded corners to the bottom of the header container
+        borderRadius: const BorderRadius.only(
+          bottomLeft: Radius.circular(10),
+          bottomRight: Radius.circular(10),
+        ),
         // Added gradient for a richer look
         gradient: LinearGradient(
           colors: [headerColor, headerColor.withOpacity(0.8)],
@@ -158,21 +156,21 @@ class GestureDisplayPage extends StatelessWidget {
     );
   }
 
-  // --- MODIFIED: Restored title text, kept TTS icon alignment ---
+  // --- MODIFIED: Added btProvider to header arguments and made icon clickable ---
   Widget _buildGestureHeader(
       BuildContext context,
       AppLocalizations l,
       TtsProvider ttsProvider,
       BluetoothProvider btProvider,
       ColorScheme colorScheme) {
-    // Added btProvider argument
-
-    final primaryColor = customPrimaryColor;
-    final isTtsEnabled = ttsProvider.isTtsEnabled;
+    // Logic to determine if a valid gesture is present
     final String currentGesture = btProvider.lastGesture;
     final bool canSpeak = currentGesture.isNotEmpty &&
         currentGesture.toLowerCase() != "none" &&
         currentGesture.toLowerCase() != "no gesture";
+
+    final primaryColor = customPrimaryColor;
+    final isTtsEnabled = ttsProvider.isTtsEnabled;
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -186,7 +184,7 @@ class GestureDisplayPage extends StatelessWidget {
               ),
         ),
 
-        // TTS Status Icon (Now clickable for replay)
+        // 2. TTS STATUS ICON (Now clickable for replay)
         IconButton(
           padding: EdgeInsets.zero,
           constraints: const BoxConstraints(),
@@ -197,6 +195,7 @@ class GestureDisplayPage extends StatelessWidget {
             color: isTtsEnabled ? primaryColor : colorScheme.outline,
             size: 30,
           ),
+          tooltip: isTtsEnabled ? "Replay: ${currentGesture}" : "TTS Disabled",
           onPressed: isTtsEnabled && canSpeak
               ? () {
                   // ACTION: Speak the current gesture word again
@@ -212,10 +211,11 @@ class GestureDisplayPage extends StatelessWidget {
   Widget _buildGestureDisplayBox(BuildContext context, String gesture,
       bool isWaiting, ColorScheme colorScheme) {
     // Define a single, consistent aesthetic regardless of state
-    const Color boxColor =
-        Color.fromRGBO(240, 240, 245, 1); // Light subtle background
+    final Color boxColor = colorScheme.surfaceVariant; // Adaptive surface color
     final Color borderColor = colorScheme.outline.withOpacity(0.15);
-    const Color shadowColor = Color.fromRGBO(0, 0, 0, 0.1);
+    final Color shadowColor = Theme.of(context).brightness == Brightness.dark
+        ? Colors.transparent
+        : Colors.black.withOpacity(0.1);
 
     return Container(
       width: double.infinity,
@@ -223,16 +223,16 @@ class GestureDisplayPage extends StatelessWidget {
       // *** STATIC DECORATION ENSURING CONSISTENT LOOK ***
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(30),
-        color: boxColor, // Static background color
-        boxShadow: const [
+        color: boxColor, // Adaptive background color
+        boxShadow: [
           BoxShadow(
             color: shadowColor,
             blurRadius: 15,
-            offset: Offset(0, 5),
+            offset: const Offset(0, 5),
           ),
         ],
         border: Border.all(
-          color: borderColor, // Static border color
+          color: borderColor, // Adaptive border color
           width: 1.5,
         ),
       ),
