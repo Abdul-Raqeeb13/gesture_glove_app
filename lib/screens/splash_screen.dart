@@ -9,91 +9,128 @@ class SplashScreen extends StatefulWidget {
   State<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> {
-  // Define a custom primary color that matches the orange in the image
-  static const Color _customOrange =
-      Color(0xFF023e7d); // A vibrant, soft orange
+class _SplashScreenState extends State<SplashScreen>
+    with TickerProviderStateMixin {
+  static const Color _customOrange = Color.fromARGB(255, 120, 224, 209);
+
+  late AnimationController _logoController;
+  late Animation<double> _fadeAnimation;
+
+  late AnimationController _cloudController;
+  late Animation<double> _cloudAnimation1;
+  late Animation<double> _cloudAnimation2;
 
   @override
   void initState() {
     super.initState();
-    // Navigate to the home screen after 5 seconds
-    Timer(
-      const Duration(seconds: 5),
-      () {
-        if (mounted) {
-          // Replaces the splash screen with the home screen
-          // so the user can't press "back" to go to it.
-          Navigator.of(context).pushReplacementNamed('/home');
-        }
-      },
+
+    // Navigate to home after 5 seconds
+    Timer(const Duration(seconds: 5), () {
+      if (mounted) {
+        Navigator.of(context).pushReplacementNamed('/home');
+      }
+    });
+
+    // Blinking logo animation
+    _logoController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 1),
     );
+    _fadeAnimation = Tween<double>(begin: 0.2, end: 1.0).animate(
+      CurvedAnimation(parent: _logoController, curve: Curves.easeInOut),
+    );
+    _logoController.repeat(reverse: true);
+
+    // Clouds animation (horizontal movement)
+    _cloudController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 10),
+    );
+
+    _cloudAnimation1 = Tween<double>(begin: -100, end: 400).animate(
+      CurvedAnimation(parent: _cloudController, curve: Curves.linear),
+    );
+
+    _cloudAnimation2 = Tween<double>(begin: 400, end: -100).animate(
+      CurvedAnimation(parent: _cloudController, curve: Curves.linear),
+    );
+
+    _cloudController.repeat();
+  }
+
+  @override
+  void dispose() {
+    _logoController.dispose();
+    _cloudController.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // 1. Set the background color to the custom orange
       backgroundColor: _customOrange,
       body: Stack(
         children: [
-          // 2. Add visual elements (clouds/stars) for aesthetic appeal
-          _buildBackgroundIllustration(),
+          // Background: animated clouds & stars
+          AnimatedBuilder(
+            animation: _cloudController,
+            builder: (context, child) {
+              return Stack(
+                children: [
+                  Positioned(
+                    top: 80,
+                    left: _cloudAnimation1.value,
+                    child: const Icon(
+                      Icons.cloud,
+                      size: 150,
+                      color: Colors.white70,
+                    ),
+                  ),
+                  Positioned(
+                    top: 580,
+                    left: _cloudAnimation2.value,
+                    child: const Icon(
+                      Icons.cloud,
+                      size: 150,
+                      color: Colors.white70,
+                    ),
+                  ),
+                  _buildSparkle(150, 50),
+                  _buildSparkle(700, 300),
+                ],
+              );
+            },
+          ),
 
-          // 3. Centered Content (Logo, Text, Loader)
+          // Centered blinking logo
           Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 const SizedBox(height: 100),
-                // Custom Illustrated Logo Section (Inspired by the panda's wave)
-                const _IllustratedLogo(
-                  color: Colors.white,
-                ),
-                const SizedBox(height: 25),
-
-                // App Title
-                const Text(
-                  "Glovox",
-                  style: TextStyle(
-                    fontSize: 48,
-                    fontWeight: FontWeight.w900,
-                    color: Colors.white,
-                    letterSpacing: 2.0,
-                    shadows: [
-                      BoxShadow(
-                        color: Colors.black26,
-                        blurRadius: 4,
-                        offset: Offset(0, 2),
-                      ),
-                    ],
+                FadeTransition(
+                  opacity: _fadeAnimation,
+                  child: Image.asset(
+                    'assets/images/logo.png',
+                    width: 280,
+                    height: 280,
+                    fit: BoxFit.contain,
                   ),
                 ),
                 const SizedBox(height: 48),
-
-                // Loader (Styled to match the background)
-                // SizedBox(
-                //   width: 50,
-                //   height: 50,
-                //   child: CircularProgressIndicator(
-                //     strokeWidth: 5,
-                //     color: Colors.white,
-                //     backgroundColor: Colors.white.withOpacity(0.3),
-                //   ),
-                // ),
               ],
             ),
           ),
 
-          // 4. Footer Text
+          // Footer
           const Align(
             alignment: Alignment.bottomCenter,
             child: Padding(
-              padding: EdgeInsets.only(bottom: 50.0),
+              padding: EdgeInsets.only(bottom: 20.0),
               child: Text(
-                "Gesture Power", // A tagline
+                "POWERED BY HAZURA",
                 style: TextStyle(
-                  color: Colors.white70,
+                  color: Color.fromARGB(179, 0, 0, 0),
                   fontSize: 18,
                   fontWeight: FontWeight.w500,
                 ),
@@ -102,79 +139,6 @@ class _SplashScreenState extends State<SplashScreen> {
           ),
         ],
       ),
-    );
-  }
-}
-
-// --- Helper Widget for the Visual Illustration ---
-
-class _IllustratedLogo extends StatelessWidget {
-  final Color color;
-  const _IllustratedLogo({required this.color});
-
-  @override
-  Widget build(BuildContext context) {
-    // Replaces the panda with a waving/helpful hand/glove icon
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: color,
-        borderRadius: BorderRadius.circular(30),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.3),
-            blurRadius: 15,
-            offset: const Offset(0, 5),
-          ),
-        ],
-      ),
-      child: Icon(
-        Icons.waving_hand_rounded, // Use a welcoming gesture icon
-        size: 120,
-        color: _SplashScreenState
-            ._customOrange, // Use the primary color for the icon
-      ),
-    );
-  }
-}
-
-class _AnimatedCloud extends StatelessWidget {
-  final double top;
-  final double left;
-  final Color color;
-
-  const _AnimatedCloud(
-      {required this.top, required this.left, required this.color});
-
-  @override
-  Widget build(BuildContext context) {
-    return Positioned(
-      top: top,
-      left: left,
-      child: Icon(
-        Icons.cloud,
-        size: 150,
-        color: color.withOpacity(0.4),
-      ),
-    );
-  }
-}
-
-class _buildBackgroundIllustration extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    // Use Positioned widgets to place clouds and stars like in the reference image
-    return Stack(
-      children: [
-        // Clouds (Softly toned orange/white)
-        const _AnimatedCloud(top: 80, left: 20, color: Colors.white),
-        const _AnimatedCloud(top: 580, left: 190, color: Colors.white),
-
-        // Stars/Sparkles
-        _buildSparkle(150, 50),
-        // _buildSparkle(500, 270),
-        _buildSparkle(700, 300),
-      ],
     );
   }
 
@@ -187,10 +151,7 @@ class _buildBackgroundIllustration extends StatelessWidget {
         duration: const Duration(seconds: 2),
         curve: Curves.easeInOut,
         builder: (context, scale, child) {
-          return Transform.scale(
-            scale: scale,
-            child: child,
-          );
+          return Transform.scale(scale: scale, child: child);
         },
         child: const Icon(Icons.star, size: 20, color: Colors.white70),
       ),

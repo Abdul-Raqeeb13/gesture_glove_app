@@ -1,57 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
-// Assuming customPrimaryColor is a globally accessible variable/constant
 import 'package:Glovox/main.dart';
 
-// --- START: Helper function for Drawer Items (Theme-Aware) ---
-
-Widget _buildDrawerItem(
-  BuildContext context,
-  String title,
-  IconData icon,
-  VoidCallback onTap, {
-  bool isSelected = false,
-  bool isSignout = false,
-}) {
-  // Use theme colors for adaptive styling
-  final Color primaryColor = customPrimaryColor;
-  final Color onSurfaceColor = Theme.of(context).colorScheme.onSurface;
-
-  // Adaptive color for non-primary elements
-  final Color defaultIconColor = onSurfaceColor.withOpacity(0.7);
-
-  // Styling logic
-  final Color selectedColor = primaryColor.withOpacity(0.1);
-  final Color iconColor = isSelected ? primaryColor : defaultIconColor;
-  final Color textColor = isSelected ? primaryColor : onSurfaceColor;
-
-  return Padding(
-    padding: const EdgeInsets.symmetric(horizontal: 10.0, vertical: 2.0),
-    child: Material(
-      // Background of selected item
-      color: isSelected ? selectedColor : Colors.transparent,
-      borderRadius: BorderRadius.circular(10.0),
-      child: ListTile(
-        leading: Icon(
-          icon,
-          color:
-              isSignout ? defaultIconColor : iconColor, // Signout icon is muted
-        ),
-        title: Text(
-          title,
-          style: TextStyle(
-            color: textColor,
-            fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-          ),
-        ),
-        onTap: onTap,
-      ),
-    ),
-  );
-}
-
-// --- START: Custom Painter for Curved Header ---
-
+/// ------------------------------------------------------------
+/// FIXED: Drawer Header Painter must be OUTSIDE the widget class
+/// ------------------------------------------------------------
 class _DrawerHeaderCurvePainter extends CustomPainter {
   final Color baseColor;
 
@@ -61,13 +14,12 @@ class _DrawerHeaderCurvePainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final Paint paint = Paint()..style = PaintingStyle.fill;
 
-    // First (larger, top-right) curve - lighter opacity
+    // First curve
     paint.color = baseColor.withOpacity(0.5);
     final path1 = Path()
       ..moveTo(size.width * 0.7, 0)
       ..cubicTo(size.width * 0.9, size.height * 0.1, size.width,
           size.height * 0.3, size.width, size.height * 0.5)
-      // FIX: Use size.width for radius to ensure correct scaling
       ..arcToPoint(Offset(size.width * 0.5, size.height * 0.9),
           radius: Radius.circular(size.width * 0.8), clockwise: false)
       ..lineTo(0, size.height)
@@ -75,13 +27,12 @@ class _DrawerHeaderCurvePainter extends CustomPainter {
       ..close();
     canvas.drawPath(path1, paint);
 
-    // Second (smaller, top-left) curve - slightly darker/more opaque
+    // Second curve
     paint.color = baseColor.withOpacity(0.7);
     final path2 = Path()
       ..moveTo(size.width * 0.3, 0)
       ..arcToPoint(Offset(size.width * 0.2, size.height * 0.2),
           radius: Radius.circular(size.width * 0.3), clockwise: true)
-      // FIX: Use size.width for radius to ensure correct scaling
       ..arcToPoint(Offset(size.width * 0.1, size.height * 0.8),
           radius: Radius.circular(size.width * 0.5), clockwise: false)
       ..lineTo(0, size.height)
@@ -94,177 +45,216 @@ class _DrawerHeaderCurvePainter extends CustomPainter {
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
-// --- END: Custom Painter for Curved Header ---
-
-class AppDrawer extends StatelessWidget {
+class AppDrawer extends StatefulWidget {
   const AppDrawer({super.key});
 
-  // Helper method for navigation logic
-  void _navigateTo(BuildContext context, String routeName,
-      {bool replace = false}) {
-    Navigator.of(context).pop(); // Close the drawer first
-    if (replace) {
-      // Check to prevent pushing home if already there (for Home button)
-      if (ModalRoute.of(context)!.settings.name != routeName) {
-        Navigator.of(context).pushReplacementNamed(routeName);
-      }
-    } else {
-      Navigator.of(context).pushNamed(routeName);
-    }
+  @override
+  State<AppDrawer> createState() => _AppDrawerState();
+}
+
+class _AppDrawerState extends State<AppDrawer>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _fade;
+  late Animation<Offset> _slide;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 800),
+    );
+
+    _fade = CurvedAnimation(parent: _controller, curve: Curves.easeInOut);
+
+    _slide = Tween<Offset>(
+      begin: const Offset(-0.3, 0),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
+
+    _controller.forward();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  Widget animatedDrawerItem({
+    required double start,
+    required double end,
+    required Widget child,
+  }) {
+    final animation = CurvedAnimation(
+      parent: _controller,
+      curve: Interval(start, end, curve: Curves.easeOut),
+    );
+
+    return FadeTransition(
+      opacity: animation,
+      child: SlideTransition(
+        position: Tween<Offset>(begin: const Offset(-0.1, 0), end: Offset.zero)
+            .animate(animation),
+        child: child,
+      ),
+    );
+  }
+
+  Widget _buildDrawerItem(
+    BuildContext context,
+    String title,
+    IconData icon,
+    VoidCallback onTap, {
+    bool isSelected = false,
+  }) {
+    final Color primaryColor = customPrimaryColor;
+    final Color onSurfaceColor = Theme.of(context).colorScheme.onSurface;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+      child: Material(
+        color: isSelected ? primaryColor.withOpacity(0.1) : Colors.transparent,
+        borderRadius: BorderRadius.circular(10),
+        child: ListTile(
+          leading: Icon(
+            icon,
+            color: isSelected ? primaryColor : onSurfaceColor.withOpacity(0.7),
+          ),
+          title: Text(
+            title,
+            style: TextStyle(
+              color: isSelected ? primaryColor : onSurfaceColor,
+              fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+            ),
+          ),
+          onTap: onTap,
+        ),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context)!;
-
     final Color primaryColor = customPrimaryColor;
-    final Color onPrimaryColor = Theme.of(context).colorScheme.onPrimary;
-    final double headerHeight = 180.0;
 
-    // Determine if we are in Dark Mode
-    final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
-
-    // Set colors for the header content based on theme
-    final Color headerTextColor = isDarkMode ? onPrimaryColor : Colors.black87;
-    final Color avatarBackgroundColor =
-        isDarkMode ? Colors.white : Colors.white.withOpacity(0.9);
+    const double headerHeight = 180.0;
 
     return Drawer(
-      // Use the theme's surface color for the main drawer background
-      child: Container(
-        color: Theme.of(context).colorScheme.surface,
-        child: Column(
-          children: [
-            // 1. Stylish Drawer Header Section
-            Stack(
+      child: FadeTransition(
+        opacity: _fade,
+        child: SlideTransition(
+          position: _slide,
+          child: Container(
+            color: Theme.of(context).colorScheme.surface,
+            child: Column(
               children: [
-                // Background with the stylish curve
-                Container(
+                // ---------------- HEADER ----------------
+                SizedBox(
                   height: headerHeight,
-                  width: double.infinity,
-                  // Use the primary color as the base for the header area
-                  decoration:
-                      BoxDecoration(color: primaryColor.withOpacity(0.85)),
-                  child: CustomPaint(
-                    painter: _DrawerHeaderCurvePainter(primaryColor),
+                  child: Stack(
+                    children: [
+                      Container(
+                        height: headerHeight,
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                          color: primaryColor.withOpacity(0.85),
+                        ),
+                        child: CustomPaint(
+                          painter: _DrawerHeaderCurvePainter(primaryColor),
+                        ),
+                      ),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Container(
+                              decoration: const BoxDecoration(
+                                color: Color.fromARGB(180, 239, 239, 239),
+                                borderRadius: BorderRadius.only(
+                                  topRight: Radius.circular(120),
+                                  bottomRight: Radius.circular(120),
+                                ),
+                              ),
+                              child: Center(
+                                child: Image.asset(
+                                  'assets/images/logo.png',
+                                  width: 120,
+                                  height: 120,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const Expanded(child: SizedBox()),
+                        ],
+                      ),
+                    ],
                   ),
                 ),
 
-                // Header Content (Icon and Name 'Glovox')
-                Container(
-                  height: headerHeight,
-                  padding: const EdgeInsets.fromLTRB(20, 50, 20, 20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.center,
+                // ---------------- ITEMS ----------------
+                Expanded(
+                  child: ListView(
+                    padding: EdgeInsets.zero,
                     children: [
-                      // Profile/Icon Placeholder - Use Icon & Name 'Glovox'
-                      Row(
-                        children: [
-                          CircleAvatar(
-                            radius: 30,
-                            // Theme-aware background for the avatar circle
-                            backgroundColor: avatarBackgroundColor,
-                            child: Icon(
-                              Icons.settings_input_antenna,
-                              size: 30,
-                              color: primaryColor,
-                            ),
-                          ),
-                          const SizedBox(width: 15),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Glovox', // Name requested
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .titleLarge
-                                    ?.copyWith(
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.white, // Adaptive color
-                                    ),
-                              ),
-                              // View Profile text
-                              Text(
-                                'View Profile',
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .labelMedium
-                                    ?.copyWith(
-                                      color: primaryColor.withOpacity(0.9),
-                                      decoration: TextDecoration.underline,
-                                    ),
-                              ),
-                            ],
-                          ),
-                        ],
+                      animatedDrawerItem(
+                        start: 0.2,
+                        end: 0.4,
+                        child: _buildDrawerItem(
+                          context,
+                          l.home,
+                          Icons.home_outlined,
+                          () =>
+                              Navigator.pushReplacementNamed(context, '/home'),
+                          isSelected:
+                              ModalRoute.of(context)!.settings.name == '/home',
+                        ),
+                      ),
+                      animatedDrawerItem(
+                        start: 0.3,
+                        end: 0.5,
+                        child: _buildDrawerItem(
+                          context,
+                          l.learning,
+                          Icons.search,
+                          () => Navigator.pushNamed(context, '/learning'),
+                          isSelected: ModalRoute.of(context)!.settings.name ==
+                              '/learning',
+                        ),
+                      ),
+                      animatedDrawerItem(
+                        start: 0.4,
+                        end: 0.6,
+                        child: _buildDrawerItem(
+                          context,
+                          l.settings,
+                          Icons.settings_outlined,
+                          () => Navigator.pushNamed(context, '/settings'),
+                          isSelected: ModalRoute.of(context)!.settings.name ==
+                              '/settings',
+                        ),
+                      ),
+                      const Divider(height: 1),
+                      animatedDrawerItem(
+                        start: 0.5,
+                        end: 0.8,
+                        child: _buildDrawerItem(
+                          context,
+                          l.bluetoothSettings,
+                          Icons.bluetooth,
+                          () => Navigator.pushNamed(context, '/bluetooth'),
+                          isSelected: ModalRoute.of(context)!.settings.name ==
+                              '/bluetooth',
+                        ),
                       ),
                     ],
                   ),
                 ),
               ],
             ),
-
-            // 2. Main Menu Items (Scrollable)
-            Expanded(
-              child: ListView(
-                padding: EdgeInsets.zero,
-                children: [
-                  // 1. Home
-                  _buildDrawerItem(
-                    context,
-                    l.home,
-                    Icons.home_outlined,
-                    () => _navigateTo(context, '/home', replace: true),
-                    isSelected:
-                        ModalRoute.of(context)!.settings.name == '/home',
-                  ),
-
-                  // 2. Explore (Using learning from your original code)
-                  _buildDrawerItem(
-                    context,
-                    l.learning, // Maps to 'Explore'
-                    Icons.search,
-                    () => _navigateTo(context, '/learning'),
-                    isSelected:
-                        ModalRoute.of(context)!.settings.name == '/learning',
-                  ),
-
-                  // 7. Settings
-                  _buildDrawerItem(
-                    context,
-                    l.settings,
-                    Icons.settings_outlined,
-                    () => _navigateTo(context, '/settings'),
-                    isSelected:
-                        ModalRoute.of(context)!.settings.name == '/settings',
-                  ),
-
-                  // Separator for Bluetooth settings
-                  Divider(
-                    indent: 20,
-                    endIndent: 20,
-                    height: 1,
-                    color: Theme.of(context)
-                        .colorScheme
-                        .onSurface
-                        .withOpacity(0.1),
-                  ),
-
-                  // Bluetooth settings from your original code
-                  _buildDrawerItem(
-                    context,
-                    l.bluetoothSettings,
-                    Icons.bluetooth,
-                    () => _navigateTo(context, '/bluetooth'),
-                    isSelected:
-                        ModalRoute.of(context)!.settings.name == '/bluetooth',
-                  ),
-                ],
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );

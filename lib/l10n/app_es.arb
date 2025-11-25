@@ -30,6 +30,7 @@
   "none": "Ninguno",
   "permissionsDenied": "Permisos Denegados",
   "pleaseGrantPermissions": "Por favor, concede permisos de Bluetooth en la configuración.",
+  "general" : "General",
     "appInfo": "App Information",
   "version": "Version",
   "privacyPolicy": "Privacy Policy",

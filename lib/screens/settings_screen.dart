@@ -191,12 +191,10 @@ class SettingsScreen extends StatelessWidget {
         children: [
           // Section Title
           Text(
-            l.connect, // Assuming 'General' localization exists
+            l.general, // Assuming 'General' localization exists
             style: Theme.of(context).textTheme.headlineSmall!.copyWith(
                   fontWeight: FontWeight.bold,
-                  color: Theme.of(context)
-                      .colorScheme
-                      .primary, // Highlight primary section title
+                  color: Colors.white, // Set title text color to white
                 ),
           ),
           const SizedBox(height: 16),
@@ -246,13 +244,6 @@ class SettingsScreen extends StatelessWidget {
                 subtitle: '1.0.3',
                 icon: Icons.info_outline,
                 onTap: () {},
-              ),
-              _buildSettingTile(
-                context: context,
-                title: 'Privacy Policy',
-                subtitle: 'Review our data usage',
-                icon: Icons.lock_outline,
-                onTap: () {/* Navigate to Privacy Policy */},
               ),
             ],
           ),

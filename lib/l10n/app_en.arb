@@ -31,6 +31,7 @@
   "permissionsDenied": "Permissions Denied",
   "pleaseGrantPermissions": "Please grant Bluetooth permissions in settings.",
   "appInfo": "App Information",
+  "general" : "General",
   "version": "Version",
   "privacyPolicy": "Privacy Policy",
   "reviewDataUsage": "Review our data usage"
