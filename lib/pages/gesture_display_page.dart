@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:gesture_glove_app/main.dart';
-import 'package:gesture_glove_app/providers/bluetooth_provider.dart';
-import 'package:gesture_glove_app/providers/tts_provider.dart';
+import 'package:Glovox/main.dart';
+import 'package:Glovox/providers/bluetooth_provider.dart';
+import 'package:Glovox/providers/tts_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 

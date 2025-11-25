@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:gesture_glove_app/providers/bluetooth_provider.dart';
+import 'package:Glovox/providers/bluetooth_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_bluetooth_serial/flutter_bluetooth_serial.dart';
-import 'package:gesture_glove_app/main.dart'; // Ensure customPrimaryColor is imported
+import 'package:Glovox/main.dart'; // Ensure customPrimaryColor is imported
 
 // NOTE: customPrimaryColor is assumed to be defined in main.dart and imported above.
 

@@ -29,6 +29,9 @@
   "lastGesture": "Last Gesture",
   "none": "None",
   "permissionsDenied": "Permissions Denied",
-  "pleaseGrantPermissions": "Please grant Bluetooth permissions in settings."
+  "pleaseGrantPermissions": "Please grant Bluetooth permissions in settings.",
+  "appInfo": "App Information",
+  "version": "Version",
+  "privacyPolicy": "Privacy Policy",
+  "reviewDataUsage": "Review our data usage"
 }
-

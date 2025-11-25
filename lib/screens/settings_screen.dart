@@ -5,7 +5,7 @@ import '../l10n/l10n.dart';
 import '../providers/locale_provider.dart';
 import '../providers/theme_provider.dart';
 // Assuming customPrimaryColor is accessible (from main.dart or similar)
-import 'package:gesture_glove_app/main.dart';
+import 'package:Glovox/main.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});

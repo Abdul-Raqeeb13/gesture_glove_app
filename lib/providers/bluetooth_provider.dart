@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bluetooth_serial/flutter_bluetooth_serial.dart';
-import 'package:gesture_glove_app/providers/tts_provider.dart';
+import 'package:Glovox/providers/tts_provider.dart';
 import 'package:permission_handler/permission_handler.dart' as perm_handler;
 
 class BluetoothProvider with ChangeNotifier {

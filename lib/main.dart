@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:gesture_glove_app/providers/bluetooth_provider.dart';
-import 'package:gesture_glove_app/providers/tts_provider.dart';
+import 'package:Glovox/providers/bluetooth_provider.dart';
+import 'package:Glovox/providers/tts_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'my_app.dart';

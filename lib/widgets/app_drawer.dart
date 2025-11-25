@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 // Assuming customPrimaryColor is a globally accessible variable/constant
-import 'package:gesture_glove_app/main.dart';
+import 'package:Glovox/main.dart';
 
 // --- START: Helper function for Drawer Items (Theme-Aware) ---
 
@@ -262,21 +262,6 @@ class AppDrawer extends StatelessWidget {
                         ModalRoute.of(context)!.settings.name == '/bluetooth',
                   ),
                 ],
-              ),
-            ),
-
-            // 3. Signout Section (Fixed at bottom)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 16.0),
-              child: _buildDrawerItem(
-                context,
-                'Signout', // Placeholder text for Signout
-                Icons.logout,
-                () {
-                  // Implement Signout logic here
-                  Navigator.of(context).pop();
-                },
-                isSignout: true,
               ),
             ),
           ],

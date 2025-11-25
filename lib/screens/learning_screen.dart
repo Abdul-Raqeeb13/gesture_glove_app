@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 // Assuming customPrimaryColor is a globally accessible variable/constant
-import 'package:gesture_glove_app/main.dart';
+import 'package:Glovox/main.dart';
 
 // --- START: Modern Header Card Widget (Unchanged) ---
 
