@@ -29,6 +29,14 @@ class MyApp extends StatelessWidget {
       supportedLocales: L10n.all,
       localizationsDelegates: AppLocalizations.localizationsDelegates,
 
+      // This forces the layout to stay Left-to-Right even if Urdu is selected.
+      builder: (context, child) {
+        return Directionality(
+          textDirection: TextDirection.ltr,
+          child: child!,
+        );
+      },
+
       // --- Theme ---
       themeMode: themeProvider.themeMode,
 

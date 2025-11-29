@@ -28,8 +28,33 @@ void main() async {
   // --- Create providers that depend on each other ---
   // 1. Create TtsProvider first
   final ttsProvider = TtsProvider(prefs);
-  // 2. Create BluetoothProvider and give it the TtsProvider
+  // 2. Create LocaleProvider
+  final localeProvider = LocaleProvider(prefs);
+  // 3. Create BluetoothProvider and give it the TtsProvider
   final bluetoothProvider = BluetoothProvider(ttsProvider);
+
+  // ✅ CRITICAL: Load ALL voices at startup (both Urdu and English)
+  debugPrint("🔄 MAIN: Loading all voices at startup...");
+  await ttsProvider.loadAllVoices();
+  debugPrint("✅ MAIN: All voices cached successfully");
+
+  // --- Initialize TTS voices for the starting locale ---
+  // This ensures voices are ready immediately after app start
+  debugPrint(
+      "🔄 MAIN: Setting initial language to ${localeProvider.locale.languageCode}");
+  await ttsProvider.loadVoices(
+      languageCode: localeProvider.locale.languageCode);
+  debugPrint(
+      "✅ MAIN: Initial TTS voices loaded for ${localeProvider.locale.languageCode}");
+
+  // --- NEW: Add Listener for Locale Changes to load voices ---
+  localeProvider.addListener(() {
+    final newLang = localeProvider.locale.languageCode;
+    debugPrint("🌍 MAIN: Locale changed to $newLang");
+    debugPrint("🔄 MAIN: Switching TTS voices to $newLang...");
+    // When the locale changes, reload the available voices for the new language.
+    ttsProvider.loadVoices(languageCode: newLang);
+  });
 
   runApp(
     // Use MultiProvider to make providers available to the whole app
@@ -39,9 +64,8 @@ void main() async {
         ChangeNotifierProvider(
           create: (_) => ThemeProvider(prefs),
         ),
-        ChangeNotifierProvider(
-          create: (_) => LocaleProvider(prefs),
-        ),
+        // Provide the LocaleProvider instance we created
+        ChangeNotifierProvider.value(value: localeProvider),
 
         // --- App Logic Providers ---
         // Provide the instances we just created

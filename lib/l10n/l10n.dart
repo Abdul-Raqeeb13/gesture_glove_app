@@ -3,17 +3,16 @@ import 'package:flutter/material.dart';
 class L10n {
   static final all = [
     const Locale('en'), // English
-    const Locale('es'), // Spanish
+    const Locale('ur'), // Urdu (Add this line!)
   ];
 
   static String getLanguageName(String code) {
     switch (code) {
       case 'en':
         return 'English';
-      case 'es':
-        return 'Español';
+      case 'ur':
+        return 'Urdu'; // The name displayed in the list
       default:
-        // Fix: Changed 'restiturn' to 'return'
         return 'English';
     }
   }

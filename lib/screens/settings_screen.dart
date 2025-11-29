@@ -4,13 +4,12 @@ import 'package:provider/provider.dart';
 import '../l10n/l10n.dart';
 import '../providers/locale_provider.dart';
 import '../providers/theme_provider.dart';
-// Assuming customPrimaryColor is accessible (from main.dart or similar)
+import '../providers/tts_provider.dart';
 import 'package:Glovox/main.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
 
-  // Helper function to get the theme name from the ThemeMode enum
   String _getThemeName(ThemeMode themeMode, AppLocalizations l) {
     switch (themeMode) {
       case ThemeMode.light:
@@ -22,8 +21,6 @@ class SettingsScreen extends StatelessWidget {
     }
   }
 
-  // --- NEW: Helper Widget for Custom Setting Item ---
-// --- NEW: Helper Widget for Custom Setting Item ---
   Widget _buildSettingTile({
     required BuildContext context,
     required String title,
@@ -33,14 +30,8 @@ class SettingsScreen extends StatelessWidget {
   }) {
     final Color primaryColor = customPrimaryColor;
     final Color onSurfaceColor = Theme.of(context).colorScheme.onSurface;
-
-    // 1. Check if the app is currently in Dark Mode
     final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
-
-    // 2. Define the icon color based on the mode
     final Color iconColor = isDarkMode ? Colors.white : primaryColor;
-
-    // 3. Define the icon background color (more opaque white in dark mode)
     final Color iconBackgroundColor = isDarkMode
         ? Colors.white.withOpacity(0.15)
         : primaryColor.withOpacity(0.1);
@@ -52,20 +43,15 @@ class SettingsScreen extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
         child: Row(
           children: [
-            // Icon Container (Visual Separator)
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                // Use the new icon background color
                 color: iconBackgroundColor,
                 borderRadius: BorderRadius.circular(10),
               ),
-              // Use the new adaptive iconColor
               child: Icon(icon, color: iconColor, size: 24),
             ),
             const SizedBox(width: 16),
-
-            // Text Content (rest of the content remains theme-aware)
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -87,8 +73,6 @@ class SettingsScreen extends StatelessWidget {
                 ],
               ),
             ),
-
-            // Trailing Icon (remains subdued onSurface color)
             Icon(Icons.chevron_right, color: onSurfaceColor.withOpacity(0.5)),
           ],
         ),
@@ -96,9 +80,6 @@ class SettingsScreen extends StatelessWidget {
     );
   }
 
-// ... rest of the SettingsScreen class remains the same ...
-
-  // --- NEW: Helper Widget for Segmented Card ---
   Widget _buildSegmentedCard({
     required BuildContext context,
     required List<Widget> children,
@@ -106,7 +87,6 @@ class SettingsScreen extends StatelessWidget {
     final Color cardColor = Theme.of(context).colorScheme.surfaceVariant;
     final Color onCardColor = Theme.of(context).colorScheme.onSurfaceVariant;
 
-    // Add vertical dividers between items
     final List<Widget> itemsWithDividers = [];
     for (int i = 0; i < children.length; i++) {
       itemsWithDividers.add(children[i]);
@@ -138,35 +118,27 @@ class SettingsScreen extends StatelessWidget {
       ),
     );
   }
-  // ---------------------------------------------------
 
   @override
   Widget build(BuildContext context) {
     final themeProvider = context.watch<ThemeProvider>();
     final localeProvider = context.watch<LocaleProvider>();
+    final ttsProvider = context.watch<TtsProvider>();
     final l = AppLocalizations.of(context)!;
 
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-
-        // --- ADDED: Set iconTheme to white for drawer/back buttons ---
-        iconTheme: const IconThemeData(
-          color: Colors.white,
-        ),
-
+        iconTheme: const IconThemeData(color: Colors.white),
         toolbarHeight: 70,
-
         flexibleSpace: Container(
           decoration: BoxDecoration(
-            // Apply the gradient using your colors
             gradient: LinearGradient(
               colors: [customPrimaryColor, gradientSecondaryColor],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
-            // Optional: Add a subtle shadow for elevation effect
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withOpacity(0.2),
@@ -176,12 +148,10 @@ class SettingsScreen extends StatelessWidget {
             ],
           ),
         ),
-
-        // --- MODIFIED: Apply TextStyle directly to the Text widget ---
         title: Text(
           l.settings,
           style: const TextStyle(
-            color: Colors.white, // Set title text color to white
+            color: Colors.white,
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -189,21 +159,17 @@ class SettingsScreen extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.all(18.0),
         children: [
-          // Section Title
           Text(
-            l.general, // Assuming 'General' localization exists
+            l.general,
             style: Theme.of(context).textTheme.headlineSmall!.copyWith(
                   fontWeight: FontWeight.bold,
-                  color: Colors.white, // Set title text color to white
+                  color: customPrimaryColor,
                 ),
           ),
           const SizedBox(height: 16),
-
-          // --- Theme and Language Settings in a Segmented Card ---
           _buildSegmentedCard(
             context: context,
             children: [
-              // 1. Theme Setting
               _buildSettingTile(
                 context: context,
                 title: l.theme,
@@ -215,8 +181,6 @@ class SettingsScreen extends StatelessWidget {
                         : Icons.smartphone_outlined,
                 onTap: () => _showThemePicker(context, l),
               ),
-
-              // 2. Language Setting
               _buildSettingTile(
                 context: context,
                 title: l.language,
@@ -225,16 +189,102 @@ class SettingsScreen extends StatelessWidget {
                 icon: Icons.language_outlined,
                 onTap: () => _showLanguagePicker(context, l),
               ),
+              _buildSettingTile(
+                context: context,
+                title: 'TTS Voice',
+                subtitle: ttsProvider.currentVoiceId?.split('.').last ??
+                    'Default Voice',
+                icon: Icons.record_voice_over_outlined,
+                onTap: () async {
+                  if (ttsProvider.availableVoices.isEmpty) {
+                    final scaffoldMessenger = ScaffoldMessenger.of(context);
+                    scaffoldMessenger.showSnackBar(
+                      SnackBar(
+                        content: Text(
+                            'Loading voices for ${localeProvider.locale.languageCode.toUpperCase()}...'),
+                        duration: const Duration(seconds: 2),
+                      ),
+                    );
+                    await ttsProvider.loadVoices();
+                    scaffoldMessenger.hideCurrentSnackBar();
+                  }
+                  if (ttsProvider.availableVoices.isNotEmpty) {
+                    _showVoicePicker(context, ttsProvider);
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                          content: Text(
+                              'No voices found for the current language. Try changing the app language.')),
+                    );
+                  }
+                },
+              ),
+              // ✅ NEW: Reload Voices Button
+              _buildSettingTile(
+                context: context,
+                title: 'Reload TTS Voices',
+                subtitle: 'Refresh after installing new language packs',
+                icon: Icons.refresh_rounded,
+                onTap: () async {
+                  final messenger = ScaffoldMessenger.of(context);
+
+                  // Show loading
+                  messenger.showSnackBar(
+                    const SnackBar(
+                      content: Row(
+                        children: [
+                          SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor:
+                                  AlwaysStoppedAnimation<Color>(Colors.white),
+                            ),
+                          ),
+                          SizedBox(width: 16),
+                          Text('Reloading voices...'),
+                        ],
+                      ),
+                      duration: Duration(seconds: 10),
+                    ),
+                  );
+
+                  // Reload all voices
+                  await ttsProvider.loadAllVoices();
+                  await ttsProvider.loadVoices(
+                      languageCode: localeProvider.locale.languageCode);
+
+                  // Hide loading and show result
+                  messenger.hideCurrentSnackBar();
+
+                  final urduCount = ttsProvider.availableVoices.length;
+                  final hasUrdu = localeProvider.locale.languageCode == 'ur' &&
+                      urduCount > 0;
+
+                  messenger.showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        hasUrdu
+                            ? '✅ Success! Found $urduCount Urdu voice(s)'
+                            : '⚠️ No Urdu voices found. Please install Urdu TTS from Android Settings.',
+                      ),
+                      backgroundColor: hasUrdu ? Colors.green : Colors.orange,
+                      duration: const Duration(seconds: 4),
+                    ),
+                  );
+                },
+              ),
             ],
           ),
-
-          // --- Example of another settings group ---
           Text(
-            'App Info', // Placeholder text
-            style: Theme.of(context).textTheme.titleLarge,
+            'App Info',
+            style: Theme.of(context).textTheme.headlineSmall!.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: customPrimaryColor,
+                ),
           ),
           const SizedBox(height: 16),
-
           _buildSegmentedCard(
             context: context,
             children: [
@@ -252,14 +302,11 @@ class SettingsScreen extends StatelessWidget {
     );
   }
 
-  // --- Helper Method for Theme Picker Dialog (Unchanged) ---
   void _showThemePicker(BuildContext context, AppLocalizations l) {
     final themeProvider = context.read<ThemeProvider>();
-
     showDialog(
       context: context,
       builder: (BuildContext context) {
-        // ... (Theme Picker Dialog logic remains the same)
         return AlertDialog(
           title: Text(l.theme),
           content: Column(
@@ -311,14 +358,11 @@ class SettingsScreen extends StatelessWidget {
     );
   }
 
-  // --- Helper Method for Language Picker Dialog (Unchanged) ---
   void _showLanguagePicker(BuildContext context, AppLocalizations l) {
     final localeProvider = context.read<LocaleProvider>();
-
     showDialog(
       context: context,
       builder: (BuildContext context) {
-        // ... (Language Picker Dialog logic remains the same)
         return AlertDialog(
           title: Text(l.language),
           content: SizedBox(
@@ -336,6 +380,61 @@ class SettingsScreen extends StatelessWidget {
                   onChanged: (Locale? newLocale) {
                     if (newLocale != null) {
                       localeProvider.setLocale(newLocale);
+                    }
+                    Navigator.of(context).pop();
+                  },
+                );
+              },
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text(MaterialLocalizations.of(context).cancelButtonLabel),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showVoicePicker(BuildContext context, TtsProvider ttsProvider) {
+    final voices = ttsProvider.availableVoices;
+    if (voices.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text(
+                'No voices found or voices still loading. Please try again.')),
+      );
+      return;
+    }
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Select TTS Voice'),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: ListView.builder(
+              shrinkWrap: true,
+              itemCount: voices.length,
+              itemBuilder: (context, index) {
+                final voice = voices[index];
+                final String voiceName = voice['name'];
+                String displayName = voiceName;
+                if (voiceName.contains('.')) {
+                  displayName = voiceName.split('.').last;
+                }
+                return RadioListTile<String>(
+                  title: Text(displayName),
+                  subtitle: Text(voice['locale'] ?? ''),
+                  value: voiceName,
+                  groupValue: ttsProvider.currentVoiceId,
+                  onChanged: (String? newVoiceName) {
+                    if (newVoiceName != null) {
+                      final selectedVoice =
+                          voices.firstWhere((v) => v['name'] == newVoiceName);
+                      context.read<TtsProvider>().setVoice(selectedVoice);
                     }
                     Navigator.of(context).pop();
                   },

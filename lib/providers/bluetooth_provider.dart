@@ -20,7 +20,6 @@ class BluetoothProvider with ChangeNotifier {
   StreamSubscription<BluetoothDiscoveryResult>? _scanSubscription;
   StreamSubscription<Uint8List>? _dataSubscription;
   String _dataBuffer = '';
-  // Private timer for managing the scan timeout
   Timer? _scanTimer;
 
   // --- Public State ---
@@ -84,8 +83,7 @@ class BluetoothProvider with ChangeNotifier {
     _isScanning = true;
     notifyListeners();
 
-    // 🎯 START TIMEOUT TIMER (10 seconds)
-    _scanTimer?.cancel(); // Cancel any existing timer
+    _scanTimer?.cancel();
     _scanTimer = Timer(const Duration(seconds: 10), () {
       if (_isScanning) {
         debugPrint(
@@ -107,13 +105,13 @@ class BluetoothProvider with ChangeNotifier {
       },
       onDone: () {
         debugPrint("Scan finished.");
-        _scanTimer?.cancel(); // Stop the timer when the scan is done
+        _scanTimer?.cancel();
         _isScanning = false;
         notifyListeners();
       },
       onError: (error) {
         debugPrint("Scan error: $error");
-        _scanTimer?.cancel(); // Stop the timer on error
+        _scanTimer?.cancel();
         _isScanning = false;
         notifyListeners();
       },
@@ -122,7 +120,7 @@ class BluetoothProvider with ChangeNotifier {
 
   void stopScan() {
     debugPrint("Stopping scan.");
-    _scanTimer?.cancel(); // Ensure the timer is stopped on manual stop
+    _scanTimer?.cancel();
     _scanSubscription?.cancel();
     _scanSubscription = null;
     _isScanning = false;
@@ -198,26 +196,25 @@ class BluetoothProvider with ChangeNotifier {
     if (gesture.isNotEmpty) {
       debugPrint("✅ Extracted gesture: $gesture");
       _lastGesture = gesture;
-      debugPrint("🔊 Calling TTS speak...");
-      _ttsProvider.speak(gesture);
-      debugPrint("📢 Notifying listeners...");
+
+      // ✅ CRITICAL FIX: Don't speak here!
+      // Let the UI (GestureDisplayPage) handle TTS with localized text
+      // We just update the gesture and notify listeners
+      debugPrint("📢 Notifying listeners (UI will handle TTS)...");
       notifyListeners();
+
+      // ❌ REMOVED: _ttsProvider.speak(gesture);
+      // The problem was speaking the raw English text here!
     } else {
       debugPrint("❌ No valid gesture found in message");
     }
   }
 
-  /// FIXED: Extract gesture from Arduino's simple format
   String _extractGesture(String data) {
     try {
-      // Clean up the data - remove semicolons, periods, extra whitespace
-      String gesture = data
-          .trim()
-          .replaceAll(';', '') // Remove semicolons
-          .replaceAll('.', '') // Remove periods
-          .trim();
+      String gesture =
+          data.trim().replaceAll(';', '').replaceAll('.', '').trim();
 
-      // Filter out debug/sensor data that Arduino might send
       if (gesture.isEmpty ||
           gesture.startsWith("Flex:") ||
           gesture.startsWith("Accel:") ||
@@ -231,7 +228,6 @@ class BluetoothProvider with ChangeNotifier {
         return "";
       }
 
-      // Return valid gesture
       return gesture;
     } catch (e) {
       debugPrint("Error extracting gesture: $e");
@@ -244,7 +240,7 @@ class BluetoothProvider with ChangeNotifier {
     disconnect();
     _scanSubscription?.cancel();
     _dataSubscription?.cancel();
-    _scanTimer?.cancel(); // Clean up the timer when the provider is disposed
+    _scanTimer?.cancel();
     super.dispose();
   }
 }
